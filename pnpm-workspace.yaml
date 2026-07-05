@@ -19,7 +19,7 @@ catalog:
   '@antfu/ni': ^30.2.0
   '@antfu/utils': ^9.3.0
   '@iconify-json/svg-spinners': ^1.2.4
-  '@shikijs/vitepress-twoslash': ^4.3.0
+  '@shikijs/vitepress-twoslash': ^4.3.1
   '@types/node': ^24.13.2
   '@unocss/reset': ^66.7.3
   '@vueuse/core': ^14.3.0
