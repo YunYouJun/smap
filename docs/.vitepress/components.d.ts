@@ -13,5 +13,12 @@ declare module 'vue' {
   export interface GlobalComponents {
     DocsProjectCard: typeof import('./../../node_modules/.pnpm/@yunyoujun+docs@0.1.14_vite@8.1.0_@types+node@26.0.1_esbuild@0.28.1_jiti@2.7.0_tsx@4.22.4_yaml@2.9.0_/node_modules/@yunyoujun/docs/client/components/DocsProjectCard.vue')['default']
     DocsProjectList: typeof import('./../../node_modules/.pnpm/@yunyoujun+docs@0.1.14_vite@8.1.0_@types+node@26.0.1_esbuild@0.28.1_jiti@2.7.0_tsx@4.22.4_yaml@2.9.0_/node_modules/@yunyoujun/docs/client/components/DocsProjectList.vue')['default']
+    MobileNavigationSheet: typeof import('./theme/components/smap/MobileNavigationSheet.vue')['default']
+    RoutePlannerPanel: typeof import('./theme/components/smap/RoutePlannerPanel.vue')['default']
+    RouteTimeline: typeof import('./theme/components/smap/RouteTimeline.vue')['default']
+    SmapNavigator: typeof import('./theme/components/smap/SmapNavigator.vue')['default']
+    SmapTopBar: typeof import('./theme/components/smap/SmapTopBar.vue')['default']
+    StarMapCanvas: typeof import('./theme/components/smap/StarMapCanvas.vue')['default']
+    TelemetryPanel: typeof import('./theme/components/smap/TelemetryPanel.vue')['default']
   }
 }

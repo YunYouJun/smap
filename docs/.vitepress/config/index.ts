@@ -7,6 +7,7 @@ import { version } from '../../../package.json'
 import typedocSidebar from '../../api/typedoc-sidebar.json'
 
 const GUIDES: DefaultTheme.NavItemWithLink[] = [
+  { text: 'SMAP 星际导航', link: '/' },
   { text: 'What is starter-monorepo?', link: '/guide/what-is' },
   { text: 'Getting Started', link: '/guide/getting-started' },
   { text: 'Configuration', link: '/guide/configuration' },
@@ -25,8 +26,8 @@ const vpConfig = getVitepressConfig({
 export default defineConfig({
   ...vpConfig,
 
-  title: 'starter-monorepo',
-  description: 'TypeScript Monorepo Starter with VitePress Documentation',
+  title: 'SMAP',
+  description: 'Interstellar navigation map demo with VitePress and Vue',
   markdown: {
     codeTransformers: [
       transformerTwoslash(),
@@ -46,6 +47,10 @@ export default defineConfig({
     },
 
     nav: [
+      {
+        text: '星际导航',
+        link: '/',
+      },
       {
         text: 'Guide',
         items: [
@@ -86,8 +91,8 @@ export default defineConfig({
   head: [
     ['link', { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }],
     ['meta', { name: 'author', content: 'YunYouJun' }],
-    ['meta', { property: 'og:title', content: 'starter-monorepo' }],
-    ['meta', { property: 'og:description', content: 'TypeScript Monorepo Starter with VitePress Documentation' }],
+    ['meta', { property: 'og:title', content: 'SMAP 星际导航' }],
+    ['meta', { property: 'og:description', content: 'Interstellar navigation map demo with VitePress and Vue' }],
     ['meta', { name: 'viewport', content: 'width=device-width, initial-scale=1.0, viewport-fit=cover' }],
   ],
 })
