@@ -25,7 +25,7 @@ catalog:
   '@iconify-json/svg-spinners': ^1.2.4
   '@nuxtjs/ionic': ^1.0.2
   '@shikijs/vitepress-twoslash': ^4.3.1
-  '@types/node': ^24.13.3
+  '@types/node': ^26.1.1
   '@unocss/reset': ^66.7.5
   '@vueuse/core': ^14.3.0
   '@yunlefun/sso': ^0.3.1
