@@ -67,14 +67,14 @@ pnpm app:generate
 Deploy this output directory to EdgeOne Pages or Cloudflare Pages:
 
 ```text
-apps/smap/.output/public
+apps/smap/dist
 ```
 
 Recommended Pages settings:
 
 ```text
 Build command: pnpm app:generate
-Output directory: apps/smap/.output/public
+Output directory: apps/smap/dist
 Node.js version: 22
 ```
 

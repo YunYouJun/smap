@@ -14,6 +14,12 @@ export default defineNuxtConfig({
 
   css: ['~/assets/styles/smap.css'],
 
+  nitro: {
+    output: {
+      publicDir: 'dist',
+    },
+  },
+
   app: {
     head: {
       title: 'SMAP 星际导航',

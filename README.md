@@ -75,14 +75,14 @@ pnpm app:generate
 部署目录：
 
 ```text
-apps/smap/.output/public
+apps/smap/dist
 ```
 
 推荐 Pages 配置：
 
 ```text
 Build command: pnpm app:generate
-Output directory: apps/smap/.output/public
+Output directory: apps/smap/dist
 Node.js version: 22
 ```
 

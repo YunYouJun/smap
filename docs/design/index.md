@@ -129,7 +129,7 @@ SMAP 子应用优先静态托管：
 
 ```text
 Build command: pnpm app:generate
-Output directory: apps/smap/.output/public
+Output directory: apps/smap/dist
 ```
 
 这使它可以部署到 EdgeOne Pages、Cloudflare Pages 或其他静态托管平台。鉴权相关逻辑保持浏览器端执行。
