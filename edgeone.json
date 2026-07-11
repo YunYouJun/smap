@@ -2,5 +2,5 @@
   "buildCommand": "pnpm app:generate",
   "installCommand": "pnpm install --frozen-lockfile",
   "outputDirectory": "apps/smap/.output/public",
-  "nodeVersion": "22.13.0"
+  "nodeVersion": "24.11.0"
 }
