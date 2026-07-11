@@ -28,6 +28,19 @@ export interface RouteOption {
   alerts: string[]
 }
 
+export type MobileService = 'navigation' | 'ride-hailing'
+
+export interface RideOption {
+  id: string
+  label: string
+  badge?: string
+  description: string
+  eta: string
+  duration: string
+  price: string
+  vehicle: 'orbital' | 'warp' | 'shared'
+}
+
 export interface HazardZone {
   id: string
   label: string

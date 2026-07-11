@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">SMAP avatar fallback</title>
+  <desc id="desc">A project-specific SMAP fallback avatar with an orbital navigation mark.</desc>
+  <defs>
+    <linearGradient id="sky" x1="18" y1="10" x2="110" y2="118" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#10233F"/>
+      <stop offset=".52" stop-color="#236FF1"/>
+      <stop offset="1" stop-color="#12B981"/>
+    </linearGradient>
+    <linearGradient id="ship" x1="57" y1="24" x2="78" y2="86" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F7FFFF"/>
+      <stop offset=".48" stop-color="#8AF7F2"/>
+      <stop offset="1" stop-color="#35D982"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(86 34) rotate(125) scale(72 92)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8AF7F2" stop-opacity=".72"/>
+      <stop offset=".48" stop-color="#35D982" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#061B2B" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#031522" flood-opacity=".34"/>
+    </filter>
+  </defs>
+  <rect width="128" height="128" rx="34" fill="#061B2B"/>
+  <rect width="128" height="128" rx="34" fill="url(#sky)" opacity=".92"/>
+  <circle cx="92" cy="30" r="52" fill="url(#glow)"/>
+  <path d="M21 77c24 21 62 19 84-3" stroke="#F7FFFF" stroke-opacity=".46" stroke-width="6" stroke-linecap="round" stroke-dasharray="3 11"/>
+  <path d="M23 52c25-22 64-21 86 4" stroke="#8AF7F2" stroke-opacity=".5" stroke-width="5" stroke-linecap="round"/>
+  <g filter="url(#softShadow)">
+    <path d="m69.4 23.7 25.7 78.5-29.2-19.6-33.7 15 37.2-73.9Z" fill="url(#ship)" stroke="#F7FFFF" stroke-width="4.5" stroke-linejoin="round"/>
+    <path d="m67.9 41.6 9.8 33.1-10.9-7.4-12.7 5.2 13.8-30.9Z" fill="#061B2B" fill-opacity=".2"/>
+  </g>
+  <circle cx="31" cy="39" r="5" fill="#FFC45F"/>
+  <circle cx="101" cy="86" r="4" fill="#F7FFFF"/>
+  <circle cx="91" cy="22" r="2.5" fill="#35D982"/>
+</svg>

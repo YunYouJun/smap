@@ -1,56 +1,41 @@
-# What is starter-monorepo?
+# 什么是 SMAP？
 
-starter-monorepo is a modern TypeScript monorepo starter template designed for building and managing multiple packages efficiently.
+SMAP 是一个星际导航地图应用原型。它把常见移动地图应用的导航、路线方案、打车、附近探索和个人中心交互，迁移到“星际出行”这个更有趣的场景中。
 
-## Features
+当前项目同时包含两个入口：
 
-### 📦 Monorepo Management
+- `apps/smap`：独立 Nuxt + Ionic SPA，承载真实运行时、移动端 Tab、YunLeFun 登录和静态部署。
+- `docs`：VitePress 文档站，用于项目介绍、设计沉淀、开发说明和演示入口。
 
-Built on pnpm workspaces, allowing you to manage multiple packages in a single repository with shared dependencies.
+## 产品目标
 
-### 🚀 Fast Development
+SMAP 的目标不是复刻某个具体品牌，而是模拟真实地图产品的通用交互逻辑：
 
-- **unbuild** - Fast build tool for TypeScript libraries
-- **Vite** - Next-generation frontend tooling
-- **Hot Module Replacement** - Instant feedback during development
+- 打开后首先看到地图和路线搜索，而不是营销落地页。
+- 移动端使用底部 Tab 切换“导航、打车、探索、我的”。
+- 路线决策放在底部 sheet 中，包含推荐路线、备选路线、路线偏好和开始导航。
+- 打车能力作为同一出行上下文里的服务，而不是独立表单页面。
+- 账号、收藏、订单和偏好集中在“我的”页，避免干扰地图第一屏。
 
-### 📝 TypeScript First
+## 当前能力
 
-Full TypeScript support with:
-- Strict type checking
-- Type generation
-- IntelliSense support
+- 星际地图画布：航线、跃迁点、风险区、路况段、图层控件。
+- 导航路线：推荐路线、低辐射路线、经济路线、路线偏好、导航开始/暂停。
+- 打车服务：轨道快船、跃迁专车、拼舱方案、价格和接驾信息。
+- 附近探索：补给、维修、住宿、风险提示。
+- 我的页面：YunLeFun 登录入口、收藏、订单和导航偏好。
+- 亮暗模式：跟随系统偏好，移动端使用地图应用风格的浅色/暗色 surface。
 
-### ✅ Testing & Quality
+## 技术选型
 
-- **Vitest** - Fast unit testing framework
-- **ESLint** - Code linting with @antfu/eslint-config
-- **Git Hooks** - Pre-commit checks with simple-git-hooks
+- Vue 3 + TypeScript：核心组件和状态组合。
+- Nuxt 4：独立应用运行时和静态生成。
+- Ionic：移动端 App 壳、Tab 和路由容器。
+- VitePress：文档站、设计沉淀和演示页面。
+- pnpm workspace：monorepo 组织方式。
 
-### 📚 Documentation
+## 设计边界
 
-- **VitePress** - Modern static site generator
-- **TypeDoc** - Automatic API documentation from source code
-- **Live Preview** - Real-time documentation development
+SMAP 会借鉴真实移动地图应用的通用模式，例如顶部路线输入、右侧地图按钮、底部路线 sheet 和个人中心入口。但项目不会使用高德地图的品牌名、商标、图标、地图瓦片或专有视觉素材。
 
-## Use Cases
-
-- Building component libraries
-- Creating utility packages
-- Developing design systems
-- Managing shared configurations
-
-## Why Monorepo?
-
-Monorepo architecture offers several advantages:
-
-1. **Code Sharing** - Easy to share code between packages
-2. **Atomic Changes** - Change multiple packages in a single commit
-3. **Unified Tooling** - Single configuration for all packages
-4. **Better Dependency Management** - Avoid version conflicts
-
-## Next Steps
-
-- [Getting Started](/guide/getting-started) - Set up your first project
-- [Configuration](/guide/configuration) - Customize your setup
-- [API Reference](/api/) - Explore the API documentation
+更多产品和 UI 决策见 [设计沉淀](/design/)。

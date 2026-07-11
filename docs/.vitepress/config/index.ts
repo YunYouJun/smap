@@ -8,26 +8,30 @@ import typedocSidebar from '../../api/typedoc-sidebar.json'
 
 const GUIDES: DefaultTheme.NavItemWithLink[] = [
   { text: 'SMAP 星际导航', link: '/' },
-  { text: 'What is starter-monorepo?', link: '/guide/what-is' },
-  { text: 'Getting Started', link: '/guide/getting-started' },
-  { text: 'Configuration', link: '/guide/configuration' },
+  { text: '什么是 SMAP？', link: '/guide/what-is' },
+  { text: '快速开始', link: '/guide/getting-started' },
+  { text: '配置与部署', link: '/guide/configuration' },
+]
+
+const DESIGN: DefaultTheme.NavItemWithLink[] = [
+  { text: '设计沉淀', link: '/design/' },
 ]
 
 const VERSIONS: (DefaultTheme.NavItemWithLink | DefaultTheme.NavItemChildren)[] = [
   { text: `v${version} (current)`, link: '/' },
-  { text: `Release Notes`, link: 'https://github.com/YunYouJun/starter-monorepo/releases' },
+  { text: `Release Notes`, link: 'https://github.com/YunYouJun/smap/releases' },
   { text: `Changelog`, link: '/changelog' },
 ]
 
 const vpConfig = getVitepressConfig({
-  repo: 'https://github.com/YunYouJun/starter-monorepo',
+  repo: 'https://github.com/YunYouJun/smap',
 })
 
 export default defineConfig({
   ...vpConfig,
 
   title: 'SMAP',
-  description: 'Interstellar navigation map demo with VitePress and Vue',
+  description: '星际导航地图应用原型',
   markdown: {
     codeTransformers: [
       transformerTwoslash(),
@@ -52,12 +56,16 @@ export default defineConfig({
         link: '/',
       },
       {
-        text: 'Guide',
+        text: '文档',
         items: [
           {
             items: GUIDES,
           },
         ],
+      },
+      {
+        text: '设计',
+        items: DESIGN,
       },
       {
         text: 'API',
@@ -71,15 +79,19 @@ export default defineConfig({
     sidebar: {
       '/': [
         {
-          text: 'Guide',
+          text: '文档',
           items: GUIDES,
+        },
+        {
+          text: '设计',
+          items: DESIGN,
         },
       ],
       '/api/': typedocSidebar,
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/YunYouJun/starter-monorepo' },
+      { icon: 'github', link: 'https://github.com/YunYouJun/smap' },
     ],
 
     footer: {
@@ -92,7 +104,7 @@ export default defineConfig({
     ['link', { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' }],
     ['meta', { name: 'author', content: 'YunYouJun' }],
     ['meta', { property: 'og:title', content: 'SMAP 星际导航' }],
-    ['meta', { property: 'og:description', content: 'Interstellar navigation map demo with VitePress and Vue' }],
+    ['meta', { property: 'og:description', content: '星际导航地图应用原型' }],
     ['meta', { name: 'viewport', content: 'width=device-width, initial-scale=1.0, viewport-fit=cover' }],
   ],
 })

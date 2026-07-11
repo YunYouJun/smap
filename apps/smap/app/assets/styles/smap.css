@@ -1,0 +1,161 @@
+html,
+body,
+#__nuxt {
+  --ion-font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --smap-mobile-tabbar-offset: calc(62px + env(safe-area-inset-bottom));
+
+  width: 100%;
+  min-width: 320px;
+  height: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: #051118;
+}
+
+.smap-ion-app,
+.smap-ion-content,
+.smap-tabs-content {
+  background: #051118;
+}
+
+.smap-ion-content,
+.smap-tabs-content {
+  --background: #051118;
+  --padding-bottom: 0;
+  --padding-end: 0;
+  --padding-start: 0;
+  --padding-top: 0;
+}
+
+.smap-ion-content::part(scroll),
+.smap-tabs-content::part(scroll) {
+  overflow: hidden;
+}
+
+.smap-ion-tabbar {
+  --background: rgba(255, 255, 255, 0.98);
+  --border: 0;
+  height: var(--smap-mobile-tabbar-offset);
+  padding: 3px 0 env(safe-area-inset-bottom);
+  border-top: 1px solid rgba(214, 222, 231, 0.82);
+  box-shadow: 0 -6px 18px rgba(36, 53, 75, 0.08);
+  backdrop-filter: saturate(180%) blur(18px);
+}
+
+.smap-ion-tabbar ion-tab-button {
+  --background: transparent;
+  --background-focused: transparent;
+  --background-focused-opacity: 0;
+  --color: #5d6875;
+  --color-selected: #236ff1;
+  --padding-bottom: 5px;
+  --padding-top: 6px;
+  position: relative;
+  height: 59px;
+  max-width: none;
+  min-width: 0;
+  border-radius: 0;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.smap-ion-tabbar ion-tab-button.tab-selected {
+  --background: transparent;
+}
+
+.smap-ion-tabbar ion-tab-button.tab-selected::after {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 20px;
+  height: 3px;
+  content: "";
+  background: #236ff1;
+  border-radius: 999px;
+  transform: translateX(-50%);
+}
+
+.smap-ion-tabbar ion-label {
+  position: relative;
+  display: inline-flex;
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.smap-ion-tabbar ion-tab-button.tab-selected ion-label {
+  font-weight: 600;
+}
+
+.smap-ion-tab-icon {
+  display: grid;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+}
+
+.smap-ion-tab-icon svg {
+  width: 23px;
+  height: 23px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.smap-ion-tabbar ion-tab-button.tab-selected .smap-ion-tab-icon {
+  transform: translateY(-1px);
+}
+
+.smap-ion-tabbar ion-tab-button.tab-selected .smap-ion-tab-icon svg {
+  stroke-width: 2.25;
+}
+
+@media (prefers-color-scheme: dark) {
+  .smap-ion-tabbar {
+    --background: rgba(255, 255, 255, 0.98);
+    border-top-color: rgba(214, 222, 231, 0.82);
+    box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.16);
+  }
+
+  .smap-ion-tabbar ion-tab-button {
+    --color: #5d6875;
+    --color-selected: #236ff1;
+  }
+
+  .smap-ion-tabbar ion-tab-button.tab-selected::after {
+    background: #236ff1;
+  }
+}
+
+@media (min-width: 761px) {
+  html,
+  body,
+  #__nuxt {
+    --smap-mobile-tabbar-offset: 0px;
+  }
+
+  .smap-ion-tabbar {
+    display: none;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}

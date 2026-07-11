@@ -1,161 +1,87 @@
-# Getting Started
+# 快速开始
 
-## Prerequisites
+## 环境要求
 
-- Node.js >= 18
-- pnpm >= 9
+- Node.js >= 22.13
+- pnpm 11.9.0
 
-## Installation
-
-### Clone the Repository
+## 安装
 
 ```bash
-git clone https://github.com/YunYouJun/starter-monorepo.git
-cd starter-monorepo
-```
-
-### Install Dependencies
-
-```bash
+git clone git@github.com:YunYouJun/smap.git
+cd smap
 pnpm install
 ```
 
-## Project Structure
+## 启动子应用
 
-```
-starter-monorepo/
-├── docs/                   # Documentation site
-│   ├── .vitepress/        # VitePress config
-│   ├── guide/             # Guide docs
-│   ├── api/               # API docs (auto-generated)
-│   └── public/            # Static assets
-├── packages/
-│   └── pkg-placeholder/   # Example package
-│       ├── src/           # Source code
-│       ├── test/          # Tests
-│       └── dist/          # Build output
-├── package.json           # Root package.json
-├── pnpm-workspace.yaml    # pnpm workspace config
-└── tsconfig.json          # TypeScript config
-```
-
-## Development
-
-### Build All Packages
+SMAP 的移动端产品运行在 `apps/smap`：
 
 ```bash
-pnpm build
+pnpm app:dev
 ```
 
-### Run in Development Mode
+默认开发端口是 `5174`。
 
-```bash
-pnpm dev
+常用路由：
+
+```text
+/tabs/map       导航地图
+/tabs/ride      星际打车
+/tabs/explore   附近探索
+/tabs/profile   我的
 ```
 
-### Run Tests
-
-```bash
-pnpm test
-```
-
-### Type Check
-
-```bash
-pnpm typecheck
-```
-
-### Lint Code
-
-```bash
-pnpm lint
-```
-
-## Working with Documentation
-
-### Start Documentation Site
+## 启动文档站
 
 ```bash
 pnpm docs:dev
 ```
 
-Visit `http://localhost:5173` to view the documentation.
+文档站用于查看项目介绍、设计沉淀和 VitePress 演示入口。
 
-### Generate API Documentation
+## 项目结构
+
+```text
+smap/
+├── apps/smap/
+│   ├── app/app.vue
+│   ├── app/components/smap/
+│   ├── app/composables/useYunlefunAuth.ts
+│   ├── app/pages/tabs/
+│   ├── nuxt.config.ts
+│   └── public/
+├── docs/
+│   ├── design/
+│   ├── guide/
+│   └── .vitepress/
+├── packages/
+├── package.json
+├── pnpm-workspace.yaml
+└── tsconfig.json
+```
+
+## 常用命令
 
 ```bash
-pnpm docs:api
+pnpm app:dev        # 启动 Nuxt/Ionic 子应用
+pnpm app:generate   # 生成子应用静态产物
+pnpm app:typecheck  # 子应用类型检查
+pnpm docs:dev       # 启动 VitePress 文档站
+pnpm docs:build     # 构建文档站
+pnpm typecheck      # 根 TypeScript 检查
+pnpm lint           # ESLint 检查
 ```
 
-This will:
-1. Read source code from `packages/*/src`
-2. Parse JSDoc comments and TypeScript types
-3. Generate Markdown docs in `docs/api/`
+## 开发入口
 
-### Build Documentation
+- 想调整真实移动端体验：优先改 `apps/smap/app/components/smap/`。
+- 想调整 Ionic Tab 页面：查看 `apps/smap/app/pages/tabs/`。
+- 想调整 YunLeFun 登录：查看 `apps/smap/app/composables/useYunlefunAuth.ts` 和 `SmapAccountStatus.vue`。
+- 想沉淀产品设计：更新 `docs/design/`。
 
-```bash
-pnpm docs:build
-```
+## 下一步
 
-### Preview Built Documentation
-
-```bash
-pnpm docs:preview
-```
-
-## Creating a New Package
-
-1. Create a new directory in `packages/`:
-
-```bash
-mkdir packages/my-package
-cd packages/my-package
-```
-
-2. Initialize package.json:
-
-```json
-{
-  "name": "my-package",
-  "version": "0.0.0",
-  "type": "module",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs"
-    }
-  },
-  "main": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
-  "files": ["dist"]
-}
-```
-
-3. Create source files:
-
-```bash
-mkdir src
-echo "export const hello = 'world'" > src/index.ts
-```
-
-4. Add build config (`build.config.ts`):
-
-```typescript
-import { defineBuildConfig } from 'unbuild'
-
-export default defineBuildConfig({
-  entries: ['src/index'],
-  declaration: true,
-  clean: true,
-  rollup: {
-    emitCJS: false,
-  },
-})
-```
-
-## Next Steps
-
-- Learn about [Configuration](/guide/configuration)
-- Explore the [API Reference](/api/)
-- Read the [Changelog](/changelog)
+- 阅读 [配置与部署](/guide/configuration)。
+- 阅读 [设计沉淀](/design/)。
+- 查看 [子应用说明](https://github.com/YunYouJun/smap/blob/main/apps/smap/README.md)。

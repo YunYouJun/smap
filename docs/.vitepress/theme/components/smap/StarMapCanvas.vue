@@ -167,20 +167,28 @@ function hazardClass(hazard: HazardZone) {
     </svg>
 
     <div class="star-map__controls" aria-label="地图控件">
-      <button type="button" aria-label="定位当前位置" @click="emit('resetZoom')">
+      <button class="star-map__control" type="button" aria-label="定位当前位置" @click="emit('resetZoom')">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="4" />
           <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
         </svg>
+        <span class="star-map__control-label">定位</span>
       </button>
-      <button type="button" aria-label="放大" @click="emit('zoomIn')">＋</button>
-      <button type="button" aria-label="缩小" @click="emit('zoomOut')">－</button>
-      <button type="button" aria-label="图层">
+      <button class="star-map__control" type="button" aria-label="放大" @click="emit('zoomIn')">
+        <span class="star-map__control-symbol" aria-hidden="true">＋</span>
+        <span class="star-map__control-label">放大</span>
+      </button>
+      <button class="star-map__control" type="button" aria-label="缩小" @click="emit('zoomOut')">
+        <span class="star-map__control-symbol" aria-hidden="true">－</span>
+        <span class="star-map__control-label">缩小</span>
+      </button>
+      <button class="star-map__control" type="button" aria-label="图层">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="m12 3 8 4-8 4-8-4 8-4Z" />
           <path d="m4 12 8 4 8-4" />
           <path d="m4 17 8 4 8-4" />
         </svg>
+        <span class="star-map__control-label">图层</span>
       </button>
     </div>
 
@@ -423,6 +431,14 @@ function hazardClass(hazard: HazardZone) {
   background: rgba(39, 245, 242, 0.09);
 }
 
+.star-map__control-label {
+  display: none;
+}
+
+.star-map__control-symbol {
+  line-height: 1;
+}
+
 .star-map__controls svg {
   width: 24px;
   height: 24px;
@@ -473,8 +489,15 @@ function hazardClass(hazard: HazardZone) {
   }
 
   .star-map__toolbar {
-    top: 182px;
+    top: 140px;
     left: 16px;
+  }
+
+  .star-map__view-select {
+    border-color: var(--smap-ui-border-strong);
+    color: var(--smap-ui-text);
+    background: var(--smap-ui-surface-raised);
+    box-shadow: var(--smap-ui-shadow);
   }
 
   .star-map__canvas {
@@ -489,26 +512,55 @@ function hazardClass(hazard: HazardZone) {
   }
 
   .star-map__controls {
-    top: 224px;
+    top: 206px;
     right: 12px;
     bottom: auto;
-    grid-template-columns: 46px;
+    grid-template-columns: 54px;
     transform: none;
+    border-color: var(--smap-ui-border-strong);
+    border-radius: 14px;
+    color: var(--smap-ui-text);
+    background: var(--smap-ui-surface-raised);
+    box-shadow: var(--smap-ui-shadow);
   }
 
   .star-map__controls button {
-    width: 46px;
-    height: 46px;
+    display: grid;
+    place-items: center;
+    width: 54px;
+    height: 56px;
     border-right: 0;
-    border-bottom: 1px solid rgba(164, 221, 231, 0.14);
+    border-bottom: 1px solid var(--smap-ui-border);
+    color: var(--smap-ui-text);
+    font-size: 22px;
   }
 
   .star-map__controls button:last-child {
     border-bottom: 0;
   }
 
+  .star-map__controls button:hover {
+    color: var(--smap-primary);
+    background: rgba(22, 119, 255, 0.08);
+  }
+
+  .star-map__control-label {
+    display: block;
+    margin-top: 3px;
+    color: var(--smap-ui-muted);
+    font-size: 11px;
+    font-weight: 690;
+    line-height: 1;
+  }
+
+  .star-map__controls svg {
+    width: 21px;
+    height: 21px;
+    stroke-width: 2;
+  }
+
   .star-map__compass {
-    top: 188px;
+    top: 150px;
     right: 20px;
     width: 58px;
     height: 58px;

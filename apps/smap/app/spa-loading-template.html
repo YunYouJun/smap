@@ -1,0 +1,50 @@
+<div class="smap-loading">
+  <div class="smap-loading__mark">SMAP</div>
+  <div class="smap-loading__bar"></div>
+</div>
+
+<style>
+.smap-loading {
+  display: grid;
+  place-content: center;
+  gap: 18px;
+  min-height: 100vh;
+  color: #dff7ff;
+  background: #051118;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.smap-loading__mark {
+  font-size: 24px;
+  font-weight: 820;
+  letter-spacing: 0;
+}
+
+.smap-loading__bar {
+  width: 132px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(160, 218, 229, 0.18);
+}
+
+.smap-loading__bar::before {
+  display: block;
+  width: 44px;
+  height: 100%;
+  border-radius: inherit;
+  background: #27f5f2;
+  animation: smap-loading-bar 900ms ease-in-out infinite alternate;
+  content: "";
+}
+
+@keyframes smap-loading-bar {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(88px);
+  }
+}
+</style>

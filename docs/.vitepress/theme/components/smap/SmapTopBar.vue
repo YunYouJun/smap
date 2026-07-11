@@ -1,9 +1,17 @@
 <script setup lang="ts">
+import type { MobileService } from './types'
+
 interface Props {
+  activeService: MobileService
   isNavigating: boolean
 }
 
+interface Emits {
+  selectService: [service: MobileService]
+}
+
 defineProps<Props>()
+const emit = defineEmits<Emits>()
 </script>
 
 <template>
@@ -15,21 +23,54 @@ defineProps<Props>()
     </div>
 
     <label class="smap-topbar__search">
-      <span class="smap-topbar__search-icon" aria-hidden="true">
+      <span class="smap-topbar__search-icon smap-topbar__search-icon--desktop" aria-hidden="true">
         <svg viewBox="0 0 24 24">
           <circle cx="10.8" cy="10.8" r="6.2" />
           <path d="m16 16 4.2 4.2" />
         </svg>
       </span>
+      <span class="smap-topbar__mobile-back" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="m15 5-7 7 7 7" />
+        </svg>
+      </span>
       <input class="smap-topbar__desktop-query" value="搜索星系、星域、天体或坐标" aria-label="搜索星系、星域、天体或坐标">
       <span class="smap-topbar__mobile-route" aria-hidden="true">
-        <strong>地球轨道港</strong>
-        <i>→</i>
-        <strong>火星中继站</strong>
+        <strong>
+          <i class="smap-topbar__route-dot smap-topbar__route-dot--origin"></i>
+          地球轨道港
+        </strong>
+        <strong>
+          <i class="smap-topbar__route-dot smap-topbar__route-dot--destination"></i>
+          火星中继站
+        </strong>
       </span>
       <kbd class="smap-topbar__desktop-key">/</kbd>
-      <span class="smap-topbar__mobile-swap" aria-hidden="true">↕</span>
+      <span class="smap-topbar__mobile-swap" aria-hidden="true">1L</span>
     </label>
+
+    <div class="smap-topbar__mobile-tabs" role="tablist" aria-label="移动端出行方式">
+      <button
+        class="smap-topbar__mobile-tab"
+        :class="{ 'smap-topbar__mobile-tab--active': activeService === 'navigation' }"
+        type="button"
+        role="tab"
+        :aria-selected="activeService === 'navigation'"
+        @click="emit('selectService', 'navigation')"
+      >
+        驾船
+      </button>
+      <button
+        class="smap-topbar__mobile-tab"
+        :class="{ 'smap-topbar__mobile-tab--active': activeService === 'ride-hailing' }"
+        type="button"
+        role="tab"
+        :aria-selected="activeService === 'ride-hailing'"
+        @click="emit('selectService', 'ride-hailing')"
+      >
+        打车
+      </button>
+    </div>
 
     <nav class="smap-topbar__nav" aria-label="星际导航视图">
       <button class="smap-topbar__nav-button" type="button">
@@ -138,7 +179,9 @@ defineProps<Props>()
 }
 
 .smap-topbar__mobile-route,
-.smap-topbar__mobile-swap {
+.smap-topbar__mobile-back,
+.smap-topbar__mobile-swap,
+.smap-topbar__mobile-tabs {
   display: none;
 }
 
@@ -222,8 +265,8 @@ defineProps<Props>()
     position: absolute;
     z-index: 9;
     inset: 0 0 auto;
-    grid-template-columns: 1fr auto;
-    gap: 12px;
+    grid-template-columns: 1fr;
+    gap: 8px;
     min-height: 0;
     padding: 16px 12px 0;
     border-bottom: 0;
@@ -232,85 +275,139 @@ defineProps<Props>()
       transparent;
   }
 
-  .smap-topbar__brand {
-    justify-content: flex-start;
-  }
-
+  .smap-topbar__brand,
   .smap-topbar__status {
-    justify-content: center;
-    min-height: 36px;
-    padding: 0 10px;
-    border: 1px solid rgba(40, 242, 237, 0.36);
-    border-radius: 8px;
-    color: #30f5ee;
-    background: rgba(17, 78, 81, 0.42);
-    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.24);
-    font-size: 12px;
-  }
-
-  .smap-topbar__mark {
-    font-size: 24px;
-  }
-
-  .smap-topbar__title {
-    font-size: 18px;
+    display: none;
   }
 
   .smap-topbar__search {
-    grid-column: 1 / -1;
+    grid-column: auto;
     grid-template-columns: auto 1fr auto;
-    height: 64px;
+    height: 82px;
     padding: 0 13px;
-    border-color: rgba(168, 202, 216, 0.24);
-    background: rgba(13, 23, 34, 0.88);
-    box-shadow: 0 18px 34px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border-color: var(--smap-ui-border-strong);
+    border-radius: 18px;
+    color: var(--smap-ui-text);
+    background: var(--smap-ui-surface-raised);
+    box-shadow: var(--smap-ui-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.22);
     backdrop-filter: blur(16px);
   }
 
-  .smap-topbar__search-icon {
-    width: 28px;
-    height: 28px;
+  .smap-topbar__mobile-back {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    color: var(--smap-ui-text);
+  }
+
+  .smap-topbar__mobile-back svg {
+    width: 32px;
+    height: 32px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2.5;
   }
 
   .smap-topbar__desktop-query,
   .smap-topbar__desktop-key,
+  .smap-topbar__search-icon--desktop,
   .smap-topbar__nav {
     display: none;
   }
 
   .smap-topbar__mobile-route {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-    gap: 12px;
+    grid-template-columns: 1fr;
+    gap: 8px;
     align-items: center;
     min-width: 0;
-    color: #f3fbff;
-    font-size: 18px;
+    color: var(--smap-ui-text);
+    font-size: 16px;
     font-weight: 760;
   }
 
   .smap-topbar__mobile-route strong {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  .smap-topbar__mobile-route i {
-    color: #31f5ef;
-    font-size: 28px;
-    font-style: normal;
-    line-height: 1;
+  .smap-topbar__route-dot {
+    flex: 0 0 auto;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .smap-topbar__route-dot--origin {
+    background: var(--smap-route-origin);
+    box-shadow: 0 0 12px rgba(89, 232, 189, 0.7);
+  }
+
+  .smap-topbar__route-dot--destination {
+    background: var(--smap-orange);
+    box-shadow: 0 0 12px rgba(255, 156, 69, 0.62);
   }
 
   .smap-topbar__mobile-swap {
     display: grid;
     place-items: center;
-    width: 34px;
+    width: 38px;
     height: 34px;
-    border-radius: 7px;
-    color: #d8edf3;
-    background: rgba(255, 255, 255, 0.06);
-    font-size: 22px;
+    border: 1px solid var(--smap-ui-border);
+    border-radius: 10px;
+    color: var(--smap-ui-text);
+    background: var(--smap-ui-surface-soft);
+    font-size: 16px;
+    font-weight: 780;
+  }
+
+  .smap-topbar__mobile-tabs {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+    width: max-content;
+    max-width: 100%;
+    min-height: 38px;
+    padding: 4px;
+    overflow-x: auto;
+    border-radius: 999px;
+    background: var(--smap-ui-surface-raised);
+    box-shadow: var(--smap-ui-shadow);
+    scrollbar-width: none;
+  }
+
+  .smap-topbar__mobile-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .smap-topbar__mobile-tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 62px;
+    height: 30px;
+    border: 0;
+    border-radius: 999px;
+    color: var(--smap-ui-muted);
+    background: transparent;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 760;
+    white-space: nowrap;
+  }
+
+  .smap-topbar__mobile-tab--active {
+    color: var(--smap-on-primary);
+    background: var(--smap-primary);
+    box-shadow: 0 8px 18px rgba(22, 119, 255, 0.28);
   }
 
   .smap-topbar__nav-button {

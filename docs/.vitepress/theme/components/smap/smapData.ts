@@ -1,4 +1,4 @@
-import type { HazardZone, RouteOption, TelemetryMetric, TravelMode, Waypoint } from './types'
+import type { HazardZone, RideOption, RouteOption, TelemetryMetric, TravelMode, Waypoint } from './types'
 
 export const travelModes: TravelMode[] = [
   {
@@ -142,6 +142,37 @@ export const routeOptions: RouteOption[] = [
       'mars-relay',
     ],
     alerts: ['补给密集', '低燃耗'],
+  },
+]
+
+export const rideOptions: RideOption[] = [
+  {
+    id: 'orbital-shuttle',
+    label: '轨道快船',
+    badge: '推荐',
+    description: '直达航线 · 快速稳定',
+    eta: '3 分钟接驾',
+    duration: '2 小时 28 分送达',
+    price: '320 星币',
+    vehicle: 'orbital',
+  },
+  {
+    id: 'warp-premium',
+    label: '跃迁专车',
+    description: '高速抵达 · 独立舱位',
+    eta: '5 分钟接驾',
+    duration: '1 小时 12 分送达',
+    price: '520 星币',
+    vehicle: 'warp',
+  },
+  {
+    id: 'shared-cabin',
+    label: '拼舱',
+    description: '拼舱出行 · 经济实惠',
+    eta: '8 分钟接驾',
+    duration: '4 小时 45 分送达',
+    price: '160 星币',
+    vehicle: 'shared',
   },
 ]
 

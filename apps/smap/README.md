@@ -1,0 +1,87 @@
+# SMAP App
+
+SMAP is the standalone Nuxt Ionic SPA for the interstellar navigation experience. The VitePress site can keep the documentation/demo entry, while this app owns product runtime concerns such as YunLeFun login, account state, Ionic tab routing, mobile route transitions, and static Pages deployment.
+
+Product and UI decisions are documented in `docs/design/index.md`.
+
+The app consumes `@yunyoujun/smap-sdk` through `app/components/smap/smapData.ts`. The SDK owns route, waypoint, POI, layer, and event data, while the app adapter keeps UI-only labels, mobile service cards, ride-hailing options, and profile actions.
+
+## App Routes
+
+The Ionic shell uses `ion-app`, `ion-router-outlet`, `ion-tabs`, and `ion-tab-bar`.
+
+```text
+/tabs/map       Navigation map
+/tabs/ride      Ride hailing
+/tabs/explore   Nearby exploration
+/tabs/profile   YunLeFun account services
+```
+
+## Development
+
+Run from the repository root:
+
+```bash
+pnpm app:dev
+```
+
+Use the app-specific script when multiple apps need to be explicit:
+
+```bash
+pnpm smap:dev
+```
+
+Or run inside this app directory:
+
+```bash
+pnpm dev
+```
+
+The local dev server uses port `5174`.
+
+## YunLeFun Auth
+
+Copy `.env.example` to `.env` when local overrides are needed:
+
+```bash
+cp apps/smap/.env.example apps/smap/.env
+```
+
+Public runtime variables:
+
+```bash
+NUXT_PUBLIC_YUNLEFUN_CLOUDBASE_ENV=yunlefun-8g7ybcxc7345c490
+NUXT_PUBLIC_YUNLEFUN_SSO_ORIGIN=https://www.yunle.fun
+```
+
+The app runs with `ssr: false`, so YunLeFun SSO and CloudBase auth stay browser-side.
+
+## Static Deployment
+
+Generate static assets from the repository root:
+
+```bash
+pnpm app:generate
+```
+
+Deploy this output directory to EdgeOne Pages or Cloudflare Pages:
+
+```text
+apps/smap/.output/public
+```
+
+Recommended Pages settings:
+
+```text
+Build command: pnpm app:generate
+Output directory: apps/smap/.output/public
+Node.js version: 22
+```
+
+## Checks
+
+```bash
+pnpm app:typecheck
+pnpm app:generate
+pnpm lint
+```

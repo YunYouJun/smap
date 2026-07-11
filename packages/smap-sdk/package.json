@@ -1,0 +1,42 @@
+{
+  "name": "@yunyoujun/smap-sdk",
+  "type": "module",
+  "version": "0.0.0",
+  "description": "TypeScript SDK for integrating SMAP interstellar map data, routes, layers, and events.",
+  "author": "YunYouJun",
+  "license": "MIT",
+  "funding": "https://github.com/sponsors/YunYouJun",
+  "homepage": "https://github.com/YunYouJun/smap#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YunYouJun/smap.git",
+    "directory": "packages/smap-sdk"
+  },
+  "bugs": "https://github.com/YunYouJun/smap/issues",
+  "keywords": [
+    "smap",
+    "map",
+    "navigation",
+    "sdk",
+    "typescript"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "unbuild",
+    "dev": "unbuild --stub",
+    "prepublishOnly": "nr build",
+    "start": "tsx src/index.ts"
+  }
+}
