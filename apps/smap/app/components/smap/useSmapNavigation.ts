@@ -16,6 +16,7 @@ import type {
   Waypoint,
 } from './types'
 import { computed, onMounted, readonly, shallowRef } from 'vue'
+import { useRuntimeConfig, useState } from '#imports'
 import {
   createRouteOptions,
   createTravelModes,
@@ -45,6 +46,12 @@ interface RouteLine {
   id: string
   color: string
   points: string
+}
+
+interface SmapRuntimeConfig {
+  public: {
+    smapEphemerisApi?: string
+  }
 }
 
 interface UseSmapNavigationReturn {
@@ -109,29 +116,35 @@ const defaultRideOption = rideOptions[0]!
 const defaultWaypoint = waypoints[waypoints.length - 1]!
 
 export function useSmapNavigation(initialService: MobileService = 'navigation'): UseSmapNavigationReturn {
-  const routeOptions = shallowRef<RouteOption[]>([...initialRouteOptions])
-  const travelModes = shallowRef<TravelMode[]>([...initialTravelModes])
-  const activeRouteId = shallowRef(defaultRoute.id)
-  const activeModeId = shallowRef(defaultMode.id)
+  const config = useRuntimeConfig() as unknown as SmapRuntimeConfig
+  const ephemerisApi = config.public.smapEphemerisApi?.trim() ?? ''
+  const routeOptions = useState<RouteOption[]>('smap:route-options', () => [...initialRouteOptions])
+  const travelModes = useState<TravelMode[]>('smap:travel-modes', () => [...initialTravelModes])
+  const activeRouteId = useState<string>('smap:active-route-id', () => defaultRoute.id)
+  const activeModeId = useState<string>('smap:active-mode-id', () => defaultMode.id)
   const activeMobileService = shallowRef<MobileService>(initialService)
-  const activeRideOptionId = shallowRef(defaultRideOption.id)
-  const originPlaceId = shallowRef(defaultOriginPlace.id)
-  const destinationPlaceId = shallowRef(defaultDestinationPlace.id)
-  const selectedWaypointId = shallowRef(defaultDestinationPlace.waypointId)
+  const activeRideOptionId = useState<string>('smap:active-ride-option-id', () => defaultRideOption.id)
+  const originPlaceId = useState<string>('smap:origin-place-id', () => defaultOriginPlace.id)
+  const destinationPlaceId = useState<string>('smap:destination-place-id', () => defaultDestinationPlace.id)
+  const selectedWaypointId = useState<string>('smap:selected-waypoint-id', () => defaultDestinationPlace.waypointId)
   const activeSearchRole = shallowRef<RouteEndpointRole | null>(null)
   const routeSearchQuery = shallowRef('')
-  const zoomLevel = shallowRef(1)
-  const isNavigating = shallowRef(false)
-  const isRideRequested = shallowRef(false)
-  const enabledMapToolIds = shallowRef<string[]>([...defaultEnabledMapToolIds])
-  const ephemerisState = shallowRef<SmapEphemerisState>(createStaticSmapEphemerisState())
+  const zoomLevel = useState<number>('smap:zoom-level', () => 1)
+  const isNavigating = useState<boolean>('smap:is-navigating', () => false)
+  const isRideRequested = useState<boolean>('smap:is-ride-requested', () => false)
+  const enabledMapToolIds = useState<string[]>('smap:enabled-map-tool-ids', () => [...defaultEnabledMapToolIds])
+  const ephemerisState = useState<SmapEphemerisState>('smap:ephemeris-state', createStaticSmapEphemerisState)
+  const isEphemerisLoaded = useState<boolean>('smap:is-ephemeris-loaded', () => false)
 
   const waypointMap = computed(() => new Map(waypoints.map(waypoint => [waypoint.id, waypoint])))
   const routePlaceMap = new Map(routePlaces.map(place => [place.id, place]))
 
   if (import.meta.client) {
     onMounted(async () => {
-      ephemerisState.value = await loadSmapEphemeris()
+      if (ephemerisApi && !isEphemerisLoaded.value) {
+        isEphemerisLoaded.value = true
+        ephemerisState.value = await loadSmapEphemeris(ephemerisApi)
+      }
     })
   }
 

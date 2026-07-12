@@ -1,7 +1,7 @@
 {
   "name": "@yunyoujun/smap-sdk",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "TypeScript SDK for integrating SMAP interstellar map data, routes, layers, and events.",
   "author": "YunYouJun",
   "license": "MIT",
@@ -33,6 +33,10 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "unbuild",
     "dev": "unbuild --stub",

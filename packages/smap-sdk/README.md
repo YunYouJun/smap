@@ -36,4 +36,4 @@ smap.setLayerVisible('traffic', true)
 
 ## License
 
-[MIT](../../LICENSE) License © [YunYouJun](https://github.com/YunYouJun)
+[MIT](./LICENSE) License © [YunYouJun](https://github.com/YunYouJun)

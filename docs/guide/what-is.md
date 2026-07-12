@@ -4,7 +4,7 @@ SMAP 是一个星际导航地图应用原型。它把常见移动地图应用的
 
 当前项目同时包含两个入口：
 
-- `apps/smap`：独立 Nuxt + Ionic SPA，承载真实运行时、移动端 Tab、YunLeFun 登录和静态部署。
+- `apps/smap`：独立 Nuxt SPA，承载真实运行时、移动端 Tab、YunLeFun 登录和静态部署。
 - `docs`：VitePress 文档站，用于项目介绍、设计沉淀、开发说明和演示入口。
 
 ## 产品目标
@@ -30,7 +30,7 @@ SMAP 的目标不是复刻某个具体品牌，而是模拟真实地图产品的
 
 - Vue 3 + TypeScript：核心组件和状态组合。
 - Nuxt 4：独立应用运行时和静态生成。
-- Ionic：移动端 App 壳、Tab 和路由容器。
+- Nuxt Router：轻量移动端 App 壳、Tab 和路由容器。
 - VitePress：文档站、设计沉淀和演示页面。
 - pnpm workspace：monorepo 组织方式。
 

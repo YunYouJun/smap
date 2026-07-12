@@ -42,6 +42,19 @@ function focusRouteSearch(role: RouteEndpointRole): void {
 function selectSearchResult(placeId: string): void {
   emit('selectRouteSearchResult', props.activeSearchRole ?? 'destination', placeId)
 }
+
+function serviceSymbol(icon: MobileServiceItem['icon']): string {
+  if (icon === 'taxi')
+    return '⌁'
+
+  if (icon === 'compass')
+    return '⌾'
+
+  if (icon === 'user')
+    return '◉'
+
+  return '◎'
+}
 </script>
 
 <template>
@@ -162,22 +175,18 @@ function selectSearchResult(placeId: string): void {
       </button>
     </div>
 
-    <nav class="smap-topbar__nav" aria-label="星际导航视图">
-      <button class="smap-topbar__nav-button" type="button">
-        <span aria-hidden="true">◎</span>
-        星图
-      </button>
-      <button class="smap-topbar__nav-button smap-topbar__nav-button--active" type="button">
-        <span aria-hidden="true">⌁</span>
-        航线
-      </button>
-      <button class="smap-topbar__nav-button" type="button">
-        <span aria-hidden="true">✣</span>
-        天体
-      </button>
-      <button class="smap-topbar__nav-button" type="button">
-        <span aria-hidden="true">⌾</span>
-        探索
+    <nav class="smap-topbar__nav" aria-label="主要服务">
+      <button
+        v-for="service in services"
+        :key="service.id"
+        class="smap-topbar__nav-button"
+        :class="{ 'smap-topbar__nav-button--active': activeService === service.id }"
+        type="button"
+        :aria-current="activeService === service.id ? 'page' : undefined"
+        @click="emit('selectService', service.id)"
+      >
+        <span aria-hidden="true">{{ serviceSymbol(service.icon) }}</span>
+        {{ service.label }}
       </button>
     </nav>
 

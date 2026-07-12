@@ -3,19 +3,17 @@ import SmapProfilePage from '~/components/smap/SmapProfilePage.vue'
 </script>
 
 <template>
-  <ion-page>
-    <ion-content class="smap-profile-ion-content" fullscreen>
-      <SmapProfilePage />
-    </ion-content>
-  </ion-page>
+  <div class="smap-profile-page">
+    <SmapProfilePage />
+  </div>
 </template>
 
 <style scoped>
-.smap-profile-ion-content {
-  --background: #f3f5f7;
-  --padding-bottom: 0;
-  --padding-end: 0;
-  --padding-start: 0;
-  --padding-top: 0;
+.smap-profile-page {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #f3f5f7;
 }
 </style>

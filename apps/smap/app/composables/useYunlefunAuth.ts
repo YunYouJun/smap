@@ -2,6 +2,7 @@ import type { SsoFailureReason, SsoMode, SsoSetSessionAuth } from '@yunlefun/sso
 import type { ComputedRef, Ref } from 'vue'
 import { computed, readonly } from 'vue'
 import { useRuntimeConfig, useState } from '#imports'
+import { formatSsoFailureMessage, formatUnexpectedAuthError } from '~/utils/authErrors'
 
 export type YunlefunAuthStatus = 'idle' | 'checking' | 'signed-in' | 'signed-out' | 'signing-in' | 'error'
 
@@ -87,15 +88,23 @@ export function useYunlefunAuth(): UseYunlefunAuthReturn {
   const ssoOrigin = computed(() => normalizeConfigValue(config.public.yunlefunSsoOrigin))
   const isAuthenticated = computed(() => Boolean(account.value))
   const displayName = computed(() => account.value?.displayName ?? '')
-  const errorMessage = computed(() => lastError.value ?? failureMessage(lastFailure.value))
+  const errorMessage = computed(() => lastError.value ?? formatSsoFailureMessage(lastFailure.value))
 
   async function initialize(): Promise<void> {
-    const auth = await ensureAuth(cloudbaseEnv.value)
-    if (!auth)
-      return
+    try {
+      const auth = await ensureAuth(cloudbaseEnv.value)
+      if (!auth)
+        return
 
-    attachLoginStateListener(auth, syncLoginState)
-    await refresh()
+      attachLoginStateListener(auth, syncLoginState)
+      await refresh()
+    }
+    catch {
+      account.value = null
+      status.value = 'signed-out'
+      lastFailure.value = null
+      lastError.value = null
+    }
   }
 
   async function refresh(): Promise<void> {
@@ -111,16 +120,16 @@ export function useYunlefunAuth(): UseYunlefunAuthReturn {
     if (!import.meta.client)
       return false
 
-    const auth = await ensureAuth(cloudbaseEnv.value)
-    if (!auth)
-      return false
-
-    attachLoginStateListener(auth, syncLoginState)
     status.value = mode === 'interactive' ? 'signing-in' : 'checking'
     lastFailure.value = null
     lastError.value = null
 
     try {
+      const auth = await ensureAuth(cloudbaseEnv.value)
+      if (!auth)
+        return false
+
+      attachLoginStateListener(auth, syncLoginState)
       const { isInYunleApp, signInWithSso } = await import('@yunlefun/sso')
       inNativeApp.value = isInYunleApp()
       const result = await signInWithSso(auth, {
@@ -133,14 +142,14 @@ export function useYunlefunAuth(): UseYunlefunAuthReturn {
         return true
       }
 
-      lastFailure.value = result.reason
+      lastFailure.value = mode === 'interactive' ? result.reason : null
       await refresh()
       if (mode === 'interactive' && result.reason !== 'not_authenticated')
         status.value = 'error'
       return false
     }
-    catch (error) {
-      lastError.value = error instanceof Error ? error.message : String(error)
+    catch {
+      lastError.value = mode === 'interactive' ? formatUnexpectedAuthError() : null
       status.value = mode === 'interactive' ? 'error' : 'signed-out'
       return false
     }
@@ -277,10 +286,4 @@ function firstNonEmpty(values: Array<string | undefined>): string | undefined {
 
 function normalizeConfigValue(value: string | undefined): string {
   return typeof value === 'string' ? value.trim() : ''
-}
-
-function failureMessage(reason: SsoFailureReason | null): string {
-  if (!reason || reason === 'not_authenticated')
-    return ''
-  return reason
 }

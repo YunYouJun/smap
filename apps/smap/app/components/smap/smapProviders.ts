@@ -39,12 +39,6 @@ export interface SmapEphemerisState {
   error?: string
 }
 
-interface SmapEphemerisProvider {
-  id: SmapEphemerisSource
-  label: string
-  load: () => Promise<SmapEphemerisState>
-}
-
 interface HorizonsPayload {
   status: 'live'
   source: 'jpl-horizons'
@@ -72,11 +66,27 @@ export const staticSmapDataProvider = createStaticSmapDataProvider(undefined, {
   label: '静态示例',
 })
 
-export const jplHorizonsProvider: SmapEphemerisProvider = {
-  id: 'jpl-horizons',
-  label: '实时星历',
-  async load() {
-    const response = await fetch('/api/smap/horizons')
+export function createStaticSmapEphemerisState(error?: unknown): SmapEphemerisState {
+  return {
+    status: error ? 'error' : 'static',
+    source: 'static',
+    sourceLabel: error ? '星历异常' : '静态示例',
+    updatedAt: new Date().toISOString(),
+    bodies: defaultSmapWaypoints
+      .filter(isSolarWaypoint)
+      .map(createStaticEphemerisBody),
+    error: error ? errorToMessage(error) : undefined,
+  }
+}
+
+export async function loadSmapEphemeris(endpoint?: string): Promise<SmapEphemerisState> {
+  const normalizedEndpoint = endpoint?.trim()
+
+  if (!normalizedEndpoint)
+    return createStaticSmapEphemerisState()
+
+  try {
+    const response = await fetch(normalizedEndpoint)
 
     if (!response.ok)
       throw new Error(`JPL Horizons proxy returned ${response.status}`)
@@ -91,25 +101,6 @@ export const jplHorizonsProvider: SmapEphemerisProvider = {
       targetDate: payload.targetDate,
       bodies: payload.bodies,
     }
-  },
-}
-
-export function createStaticSmapEphemerisState(error?: unknown): SmapEphemerisState {
-  return {
-    status: error ? 'error' : 'static',
-    source: 'static',
-    sourceLabel: error ? '星历异常' : '静态示例',
-    updatedAt: new Date().toISOString(),
-    bodies: defaultSmapWaypoints
-      .filter(isSolarWaypoint)
-      .map(createStaticEphemerisBody),
-    error: error ? errorToMessage(error) : undefined,
-  }
-}
-
-export async function loadSmapEphemeris(): Promise<SmapEphemerisState> {
-  try {
-    return await jplHorizonsProvider.load()
   }
   catch (error) {
     return createStaticSmapEphemerisState(error)

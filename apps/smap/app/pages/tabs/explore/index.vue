@@ -3,9 +3,7 @@ import SmapNavigator from '~/components/smap/SmapNavigator.vue'
 </script>
 
 <template>
-  <ion-page>
-    <ion-content class="smap-ion-content" fullscreen :scroll-y="false">
-      <SmapNavigator initial-service="explore" />
-    </ion-content>
-  </ion-page>
+  <div class="smap-page smap-page--fixed">
+    <SmapNavigator initial-service="explore" />
+  </div>
 </template>

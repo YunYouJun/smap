@@ -10,8 +10,6 @@ export default defineNuxtConfig({
   ssr: false,
   devtools: { enabled: false },
 
-  modules: ['@nuxtjs/ionic'],
-
   css: ['~/assets/styles/smap.css'],
 
   nitro: {
@@ -35,12 +33,17 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
+      smapEphemerisApi: process.env.NUXT_PUBLIC_SMAP_EPHEMERIS_API || '',
       yunlefunCloudbaseEnv: process.env.NUXT_PUBLIC_YUNLEFUN_CLOUDBASE_ENV || 'yunlefun-8g7ybcxc7345c490',
       yunlefunSsoOrigin: process.env.NUXT_PUBLIC_YUNLEFUN_SSO_ORIGIN || 'https://www.yunle.fun',
     },
   },
 
   vite: {
+    build: {
+      // CloudBase auth is isolated in a lazy chunk; the map entry stays well below this limit.
+      chunkSizeWarningLimit: 800,
+    },
     resolve: {
       alias: {
         '@yunyoujun/smap-sdk': smapSdkSource,

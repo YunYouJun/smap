@@ -1,7 +1,7 @@
 {
   "name": "smap-app",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "build": "nuxt build",
@@ -16,7 +16,6 @@
     "@yunyoujun/smap-sdk": "workspace:*"
   },
   "devDependencies": {
-    "@nuxtjs/ionic": "catalog:",
     "nuxt": "catalog:",
     "vue": "catalog:",
     "vue-tsc": "catalog:"

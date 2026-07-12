@@ -34,14 +34,14 @@ packages/smap-sdk/
 
 这个包提供无运行时依赖的 TypeScript API，包括路线规划、POI 查询、图层状态和事件订阅。`apps/smap` 已通过 `app/components/smap/smapData.ts` 消费这套 SDK，并在适配层把 SDK 数据转换为移动端 UI 需要的 view model。
 
-## Nuxt/Ionic 子应用
+## Nuxt 子应用
 
-子应用位于 `apps/smap`，使用 Nuxt 4 + Ionic：
+子应用位于 `apps/smap`，使用 Nuxt 4 和原生语义化导航：
 
 ```text
 apps/smap/
-├── app/app.vue              # ion-app + ion-router-outlet
-├── app/pages/tabs.vue       # ion-tabs + ion-tab-bar
+├── app/app.vue              # Nuxt 页面入口
+├── app/pages/tabs.vue       # 嵌套路由 + 移动端 Tab 导航
 ├── app/pages/tabs/*         # map / ride / explore / profile
 ├── app/components/smap      # 产品 UI 组件
 └── nuxt.config.ts
@@ -50,7 +50,7 @@ apps/smap/
 关键配置：
 
 - `ssr: false`：保持为 SPA，便于 YunLeFun SSO 和 CloudBase auth 在浏览器端运行。
-- `@nuxtjs/ionic`：提供 Ionic 组件、Tab 和移动端路由体验。
+- 原生 Nuxt 路由：按页面拆包，避免为自定义地图 UI 加载完整移动组件运行时。
 - `app:generate`：生成静态托管产物。
 
 ## YunLeFun 登录
@@ -64,6 +64,7 @@ cp apps/smap/.env.example apps/smap/.env
 公开运行时变量：
 
 ```bash
+NUXT_PUBLIC_SMAP_EPHEMERIS_API=
 NUXT_PUBLIC_YUNLEFUN_CLOUDBASE_ENV=yunlefun-8g7ybcxc7345c490
 NUXT_PUBLIC_YUNLEFUN_SSO_ORIGIN=https://www.yunle.fun
 ```
@@ -90,6 +91,12 @@ apps/smap/dist
 Build command: pnpm app:generate
 Output directory: apps/smap/dist
 Node.js version: 22
+```
+
+纯静态部署应让 `NUXT_PUBLIC_SMAP_EPHEMERIS_API` 保持为空，此时应用直接使用 SDK 内置的静态星历，不会访问 `/api/smap/horizons`。如果已经部署 Nuxt 服务端或独立代理，可将它设置为对应的 API 地址以启用实时 JPL Horizons 数据：
+
+```bash
+NUXT_PUBLIC_SMAP_EPHEMERIS_API=https://example.com/api/smap/horizons
 ```
 
 ## 文档站
@@ -130,6 +137,22 @@ pnpm app:generate
 pnpm typecheck
 pnpm lint
 pnpm docs:build
+pnpm test:e2e
 ```
 
-当前 Nuxt 构建可能出现 sourcemap 和大 chunk warning，主要来自 Nuxt/Ionic/CloudBase/SSO 运行时依赖；这是优化项，不阻塞静态部署。
+CloudBase 认证 SDK 只在账号组件挂载后按需加载，不进入地图首屏资源。
+
+## 发布 SDK
+
+`@yunyoujun/smap-sdk` 是仓库唯一发布到 npm 的包。发布前执行：
+
+```bash
+pnpm release:check
+pnpm release
+```
+
+发布前先在三个 `package.json` 中同步版本并更新 Changelog，提交这些改动后运行 `pnpm release`。脚本只允许从干净的 `main` 创建当前版本的 `v*` 标签，并会在创建标签前确认仓库已经配置 `NPM_TOKEN`；GitHub Release workflow 随后发布带 provenance 的公开 npm 包。首次发布需要具有 public publish 权限且可绕过自动化 2FA 的 granular access token：
+
+```bash
+gh secret set NPM_TOKEN
+```

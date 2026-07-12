@@ -9,6 +9,7 @@ import type {
   RouteOption,
   RoutePlace,
 } from './types'
+import { formatRideCtaDetail, formatRideCtaLabel } from './ridePresentation'
 
 interface Props {
   activeRideOptionId: string
@@ -26,6 +27,7 @@ interface Props {
   origin: RoutePlace
   route: RouteOption
   routes: RouteOption[]
+  selectedWaypointId: string
 }
 
 interface Emits {
@@ -46,19 +48,12 @@ const slots = defineSlots<{
 
 const smapFallbackAvatar = '/smap/avatar-fallback.svg'
 
-const rideCtaLabel = computed(() => {
-  if (props.isRideRequested)
-    return `${props.rideOption.label}已响应`
-
-  return `呼叫${props.rideOption.label}`
-})
-
-const rideCtaDetail = computed(() => {
-  if (props.isRideRequested)
-    return `${props.rideOption.eta} · 前往${props.origin.label}`
-
-  return `${props.rideOption.eta} · ${props.rideOption.duration}`
-})
+const rideCtaLabel = computed(() => formatRideCtaLabel(props.rideOption, props.isRideRequested))
+const rideCtaDetail = computed(() => formatRideCtaDetail(
+  props.rideOption,
+  props.isRideRequested,
+  props.origin.label,
+))
 
 function isMapToolEnabled(toolId: string): boolean {
   return props.enabledMapToolIds.includes(toolId)
@@ -266,6 +261,7 @@ function selectExploreSpot(spot: ExploreSpot): void {
           class="mobile-sheet__tool"
           :class="{ 'mobile-sheet__tool--active': isMapToolEnabled(tool.id) }"
           type="button"
+          :aria-pressed="isMapToolEnabled(tool.id)"
           @click="emit('toggleMapTool', tool.id)"
         >
           <span class="mobile-sheet__tool-icon" :class="`mobile-sheet__tool-icon--${tool.icon}`" aria-hidden="true">
@@ -297,8 +293,12 @@ function selectExploreSpot(spot: ExploreSpot): void {
           v-for="spot in exploreSpots"
           :key="spot.id"
           class="mobile-sheet__spot"
-          :class="`mobile-sheet__spot--${spot.tone}`"
+          :class="[
+            `mobile-sheet__spot--${spot.tone}`,
+            { 'mobile-sheet__spot--active': spot.waypointId === selectedWaypointId },
+          ]"
           type="button"
+          :aria-current="spot.waypointId === selectedWaypointId ? 'location' : undefined"
           @click="selectExploreSpot(spot)"
         >
           <span class="mobile-sheet__spot-pin" aria-hidden="true"></span>
@@ -1051,6 +1051,12 @@ function selectExploreSpot(spot: ExploreSpot): void {
     background: var(--smap-ui-card);
     font: inherit;
     text-align: left;
+  }
+
+  .mobile-sheet__spot--active {
+    border-color: var(--smap-primary);
+    background: var(--smap-primary-soft);
+    box-shadow: inset 3px 0 0 var(--smap-primary);
   }
 
   .mobile-sheet__spot-pin {
