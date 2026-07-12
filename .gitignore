@@ -16,3 +16,5 @@ cache
 .nuxt
 .output
 docs/.vitepress/components.d.ts
+.edgeone/*
+!.edgeone/project.json
