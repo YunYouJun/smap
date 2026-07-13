@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import type { MobileService } from './types'
+import { navigateTo, useRoute } from '#imports'
+import type { MobileService, RouteEndpointRole } from './types'
+import DesktopExplorePanel from './DesktopExplorePanel.vue'
+import DesktopRidePanel from './DesktopRidePanel.vue'
+import DesktopServiceOverview from './DesktopServiceOverview.vue'
 import MobileNavigationSheet from './MobileNavigationSheet.vue'
 import RoutePlannerPanel from './RoutePlannerPanel.vue'
 import RouteTimeline from './RouteTimeline.vue'
@@ -16,6 +20,15 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   initialService: 'navigation',
 })
+
+const route = useRoute()
+
+const serviceRoutes: Record<MobileService, string> = {
+  navigation: '/tabs/map',
+  explore: '/tabs/explore',
+  'ride-hailing': '/tabs/ride',
+  profile: '/tabs/profile',
+}
 
 const {
   activeMobileService,
@@ -70,6 +83,25 @@ const {
   zoomOut,
   resetZoom,
 } = useSmapNavigation(props.initialService)
+
+function goToService(service: MobileService): void {
+  selectMobileService(service)
+
+  const targetRoute = serviceRoutes[service]
+
+  if (route.path !== targetRoute)
+    void navigateTo(targetRoute)
+}
+
+function handleRouteSearchResult(role: RouteEndpointRole, placeId: string): void {
+  selectRouteSearchResult(role, placeId)
+  goToService('navigation')
+}
+
+function handleRouteSearchSubmit(): void {
+  submitRouteSearch()
+  goToService('navigation')
+}
 </script>
 
 <template>
@@ -85,15 +117,16 @@ const {
       :services="mobileServices"
       @clear-route-search="clearRouteSearch"
       @focus-route-search="focusRouteSearch"
-      @select-service="selectMobileService"
-      @select-route-search-result="selectRouteSearchResult"
-      @submit-route-search="submitRouteSearch"
+      @select-service="goToService"
+      @select-route-search-result="handleRouteSearchResult"
+      @submit-route-search="handleRouteSearchSubmit"
       @swap-route-endpoints="swapRouteEndpoints"
       @update-route-search-query="updateRouteSearchQuery"
     />
 
     <main class="smap-navigator__workspace">
       <RoutePlannerPanel
+        v-if="activeMobileService === 'navigation'"
         :active-mode-id="activeModeId"
         :active-route-id="activeRouteId"
         :active-search-role="activeSearchRole"
@@ -108,6 +141,25 @@ const {
         @select-route="selectRoute"
         @swap-route-endpoints="swapRouteEndpoints"
         @toggle-navigation="toggleNavigation"
+      />
+
+      <DesktopExplorePanel
+        v-else-if="activeMobileService === 'explore'"
+        :enabled-map-tool-ids="enabledMapToolIds"
+        :explore-spots="exploreSpots"
+        :map-tools="mapTools"
+        :selected-waypoint-id="selectedWaypointId"
+        @select-waypoint="selectWaypoint"
+        @toggle-map-tool="toggleMapTool"
+      />
+
+      <DesktopRidePanel
+        v-else-if="activeMobileService === 'ride-hailing'"
+        :active-ride-option-id="activeRideOptionId"
+        :destination="destination"
+        :origin="origin"
+        :ride-options="rideOptions"
+        @select-ride-option="selectRideOption"
       />
 
       <StarMapCanvas
@@ -130,11 +182,26 @@ const {
       />
 
       <TelemetryPanel
+        v-if="activeMobileService === 'navigation'"
         :hazards="hazardZones"
         :metrics="telemetryMetrics"
         :progress="routeProgress"
         :route="activeRoute"
         :selected-waypoint="selectedWaypoint"
+      />
+
+      <DesktopServiceOverview
+        v-else-if="activeMobileService === 'explore' || activeMobileService === 'ride-hailing'"
+        :active-service="activeMobileService"
+        :destination="destination"
+        :enabled-map-tool-ids="enabledMapToolIds"
+        :explore-spots="exploreSpots"
+        :is-ride-requested="isRideRequested"
+        :map-tools="mapTools"
+        :origin="origin"
+        :ride-option="activeRideOption"
+        :selected-waypoint="selectedWaypoint"
+        @toggle-ride-request="toggleRideRequest"
       />
     </main>
 
@@ -154,9 +221,10 @@ const {
       :origin="origin"
       :route="activeRoute"
       :routes="routeOptions"
+      :selected-waypoint-id="selectedWaypointId"
       @select-ride-option="selectRideOption"
       @select-route="selectRoute"
-      @select-service="selectMobileService"
+      @select-service="goToService"
       @select-waypoint="selectWaypoint"
       @toggle-map-tool="toggleMapTool"
       @toggle-navigation="toggleNavigation"
@@ -168,6 +236,7 @@ const {
     </MobileNavigationSheet>
 
     <RouteTimeline
+      v-if="activeMobileService === 'navigation'"
       :is-navigating="isNavigating"
       :route="activeRoute"
       :waypoints="activeRouteWaypoints"

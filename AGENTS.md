@@ -2,10 +2,12 @@
 
 ## Project Overview
 
-TypeScript Monorepo Starter Template (`starter-monorepo`) by YunYouJun.
+SMAP interstellar navigation monorepo by YunYouJun.
 
-- **Purpose**: Reusable monorepo template for building TypeScript libraries
+- **Purpose**: Static-first Nuxt navigation application with a reusable TypeScript SDK
 - **Architecture**: pnpm workspaces with catalog dependencies
+- **App**: Nuxt SPA with native nested routing and responsive mobile/desktop UI
+- **SDK**: `@yunyoujun/smap-sdk`
 - **Docs**: VitePress + TypeDoc auto-generated API docs
 - **Build**: unbuild
 - **Test**: vitest
@@ -21,7 +23,10 @@ pnpm lint           # Lint (eslint --cache)
 pnpm typecheck      # Type check (tsc --noEmit)
 pnpm docs:dev       # Dev documentation site
 pnpm docs:build     # Build documentation (typedoc + vitepress)
-pnpm release        # bumpp -r && publish
+pnpm app:generate   # Generate the static application
+pnpm app:typecheck  # Type check the Nuxt application
+pnpm test:e2e       # Run Playwright application smoke tests
+pnpm release        # Run release checks, bump versions, and push the release tag
 ```
 
 ## Conventions

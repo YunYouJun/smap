@@ -7,9 +7,14 @@ coverage
 dist
 lib-cov
 logs
+playwright-report
+test-results
 node_modules
 temp
 cache
 .eslintcache
 .nuxt
 .output
+docs/.vitepress/components.d.ts
+.edgeone/*
+!.edgeone/project.json

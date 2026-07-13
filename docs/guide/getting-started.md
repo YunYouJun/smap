@@ -3,7 +3,7 @@
 ## 环境要求
 
 - Node.js >= 22.13
-- pnpm 11.9.0
+- pnpm 11.11.0
 
 ## 安装
 
@@ -64,7 +64,7 @@ smap/
 ## 常用命令
 
 ```bash
-pnpm app:dev        # 启动 Nuxt/Ionic 子应用
+pnpm app:dev        # 启动 Nuxt 子应用
 pnpm app:generate   # 生成子应用静态产物
 pnpm app:typecheck  # 子应用类型检查
 pnpm docs:dev       # 启动 VitePress 文档站
@@ -76,7 +76,7 @@ pnpm lint           # ESLint 检查
 ## 开发入口
 
 - 想调整真实移动端体验：优先改 `apps/smap/app/components/smap/`。
-- 想调整 Ionic Tab 页面：查看 `apps/smap/app/pages/tabs/`。
+- 想调整移动端 Tab 页面：查看 `apps/smap/app/pages/tabs/`。
 - 想调整 YunLeFun 登录：查看 `apps/smap/app/composables/useYunlefunAuth.ts` 和 `SmapAccountStatus.vue`。
 - 想沉淀产品设计：更新 `docs/design/`。
 

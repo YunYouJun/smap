@@ -200,6 +200,8 @@ function hazardClass(hazard: HazardZone) {
             class="star-map__waypoint"
             role="button"
             tabindex="0"
+            :aria-label="`选择地点：${waypoint.label}`"
+            :aria-pressed="waypoint.id === selectedWaypointId"
             :class="{
               'star-map__waypoint--selected': waypoint.id === selectedWaypointId,
               [`star-map__waypoint--${waypoint.role}`]: true,

@@ -14,7 +14,7 @@ SMAP 是一个星际导航地图应用原型。它的核心不是展示一张科
 
 ## 信息架构
 
-移动端主 Tab：
+主服务在 PC 顶栏和移动端底部 Tab 中保持一致：
 
 ```text
 导航      以地图和路线规划为核心
@@ -26,14 +26,15 @@ SMAP 是一个星际导航地图应用原型。它的核心不是展示一张科
 页面层级：
 
 ```text
-IonApp
-└─ IonRouterOutlet
-   └─ IonTabs
-      ├─ /tabs/map
-      ├─ /tabs/ride
-      ├─ /tabs/explore
-      └─ /tabs/profile
+Nuxt App
+└─ /tabs
+   ├─ /tabs/map
+   ├─ /tabs/ride
+   ├─ /tabs/explore
+   └─ /tabs/profile
 ```
+
+PC 与移动端共享同一套路由、领域数据和 `useSmapNavigation` 应用级会话状态；切换服务时会保留起终点、图层、选中地点、车型和接驾状态。差异仅存在于信息编排：PC 以三栏工作台承载操作和详情，移动端以地图叠加底部 sheet 承载相同能力。
 
 ## 移动端 UI 原则
 
@@ -74,14 +75,15 @@ SMAP 会参考真实地图应用的通用模式：
 桌面端：
 
 - 可以保留更强的星际驾驶舱感。
-- 左侧路线规划、中央星图、右侧遥测信息形成工作台布局。
-- 不要求完全贴近移动地图 App。
+- 左侧根据服务切换路线规划、探索工具或快船选择，中央始终保留同一张星图。
+- 右侧根据服务显示航线遥测、探索详情或接驾状态。
+- 与移动端对齐功能、状态和 URL，不要求对齐空间布局。
 
 ## 组件职责
 
 ```text
 SmapNavigator
-  组合状态和子组件，不承载具体视觉细节。
+  组合状态、服务路由和响应式子组件，不承载具体视觉细节。
 
 SmapTopBar
   桌面品牌导航 + 移动端路线输入浮层。
@@ -90,7 +92,16 @@ StarMapCanvas
   地图画布、路线、风险区、地点标牌和地图控件。
 
 MobileNavigationSheet
-  移动端底部 sheet，包含导航、打车、探索、我的四类内容。
+  移动端底部 sheet，包含导航、打车和探索内容；账号使用独立页面。
+
+DesktopExplorePanel
+  PC 探索工具、图层开关和附近地点列表。
+
+DesktopRidePanel
+  PC 起终点摘要和快船选择。
+
+DesktopServiceOverview
+  PC 探索地点详情或快船接驾状态与主操作。
 
 SmapAccountStatus
   YunLeFun 登录状态和登录动作；在“我的”页中以 profile 形态展示。
@@ -136,7 +147,7 @@ Output directory: apps/smap/dist
 
 ## SDK 设计
 
-`packages/smap-sdk` 是对外接入层，不直接绑定 Nuxt、Vue 或 Ionic。它应该保持无运行时依赖，并优先暴露稳定的 TypeScript 类型：
+`packages/smap-sdk` 是对外接入层，不直接绑定 Nuxt、Vue 或具体 UI 框架。它应该保持无运行时依赖，并优先暴露稳定的 TypeScript 类型：
 
 - `SmapWaypoint`：地图地点和跃迁点。
 - `SmapRoute`：路线方案。

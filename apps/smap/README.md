@@ -1,6 +1,6 @@
 # SMAP App
 
-SMAP is the standalone Nuxt Ionic SPA for the interstellar navigation experience. The VitePress site can keep the documentation/demo entry, while this app owns product runtime concerns such as YunLeFun login, account state, Ionic tab routing, mobile route transitions, and static Pages deployment.
+SMAP is the standalone Nuxt SPA for the interstellar navigation experience. The VitePress site keeps the documentation and demo entry, while this app owns product runtime concerns such as YunLeFun login, account state, mobile tab routing, and static Pages deployment.
 
 Product and UI decisions are documented in `docs/design/index.md`.
 
@@ -8,7 +8,7 @@ The app consumes `@yunyoujun/smap-sdk` through `app/components/smap/smapData.ts`
 
 ## App Routes
 
-The Ionic shell uses `ion-app`, `ion-router-outlet`, `ion-tabs`, and `ion-tab-bar`.
+The lightweight app shell uses nested Nuxt pages, semantic navigation links, and CSS safe-area handling. It avoids loading a full mobile component runtime for the custom map interface.
 
 ```text
 /tabs/map       Navigation map
@@ -50,9 +50,12 @@ cp apps/smap/.env.example apps/smap/.env
 Public runtime variables:
 
 ```bash
+NUXT_PUBLIC_SMAP_EPHEMERIS_API=
 NUXT_PUBLIC_YUNLEFUN_CLOUDBASE_ENV=yunlefun-8g7ybcxc7345c490
 NUXT_PUBLIC_YUNLEFUN_SSO_ORIGIN=https://www.yunle.fun
 ```
+
+Leave `NUXT_PUBLIC_SMAP_EPHEMERIS_API` empty for static Pages deployments. The app will use its bundled ephemeris data without issuing a missing `/api` request. Set it to an absolute URL, or `/api/smap/horizons` for a Nuxt server deployment, to enable the live JPL Horizons provider.
 
 The app runs with `ssr: false`, so YunLeFun SSO and CloudBase auth stay browser-side.
 
