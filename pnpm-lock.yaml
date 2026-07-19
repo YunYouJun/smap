@@ -16,8 +16,8 @@ catalogs:
       specifier: ^9.3.0
       version: 9.3.0
     '@cloudbase/js-sdk':
-      specifier: ^3.6.2
-      version: 3.6.2
+      specifier: ^3.6.3
+      version: 3.6.3
     '@iconify-json/svg-spinners':
       specifier: ^1.2.4
       version: 1.2.4
@@ -166,7 +166,7 @@ importers:
     dependencies:
       '@cloudbase/js-sdk':
         specifier: 'catalog:'
-        version: 3.6.2
+        version: 3.6.3
       '@yunlefun/sso':
         specifier: 'catalog:'
         version: 0.3.1
@@ -492,11 +492,11 @@ packages:
   '@cloudbase/adapter-wx_mp@1.3.1':
     resolution: {integrity: sha512-rS0N1aD1a0zc421ds17/HzM4RChQ6T2ixMz87bhPJ1yveqJt/KUqYxiXJDWhZ803wwTmJs8aqNkgugsNusNhbg==}
 
-  '@cloudbase/js-sdk@3.6.2':
-    resolution: {integrity: sha512-UfWFLpeNx5TI0ICMvPKUZEm0BDRUeQge8YM3xpnFEeX3GnPqQwGeeCgi9StQWL7sIxAabILkMEmyow6x7NE5XQ==}
+  '@cloudbase/js-sdk@3.6.3':
+    resolution: {integrity: sha512-f9rz+nXPtF6tfF9BqpRWe65Re4mBjp4Uod/RtmIg0KOOEIrOEbhTGsHn8IkUCE77g41oJHp4/IneEyhFK729LA==}
 
-  '@cloudbase/wx-cloud-client-sdk@1.8.9':
-    resolution: {integrity: sha512-7zg+3Nx2tdm8p3XzVtDHxiARzEzSL/EZrWsQo6tZN8ucRWsoTXAjkwGw9cdgoL8V3W7d30mZ26yItKZpJHwTwA==}
+  '@cloudbase/wx-cloud-client-sdk@1.8.10':
+    resolution: {integrity: sha512-XtWR1zNwKUqnAK1psvhK93EUnZBWhVorUdA1lHNWyI661YsdpLcxPRiX+/yoIrTo24MJyd/KguSuHluq3hsHqA==}
 
   '@cloudflare/kv-asset-handler@0.4.2':
     resolution: {integrity: sha512-SIOD2DxrRRwQ+jgzlXCqoEFiKOFqaPjhnNTGKXSRLvp1HiOvapLaFG2kEr9dYQTYe8rKrd9uvDUzmAITeNyaHQ==}
@@ -6455,11 +6455,11 @@ snapshots:
       '@cloudbase/adapter-interface': 0.7.1
       web-streams-polyfill: 4.3.0
 
-  '@cloudbase/js-sdk@3.6.2':
+  '@cloudbase/js-sdk@3.6.3':
     dependencies:
       '@cloudbase/adapter-interface': 0.7.1
       '@cloudbase/adapter-wx_mp': 1.3.1
-      '@cloudbase/wx-cloud-client-sdk': 1.8.9
+      '@cloudbase/wx-cloud-client-sdk': 1.8.10
       '@mattiasbuelens/web-streams-adapter': 0.1.0
       bson: 6.10.4
       jwt-decode: 3.1.2
@@ -6468,7 +6468,7 @@ snapshots:
       text-encoding-shim: 1.0.5
       web-streams-polyfill: 4.3.0
 
-  '@cloudbase/wx-cloud-client-sdk@1.8.9':
+  '@cloudbase/wx-cloud-client-sdk@1.8.10':
     dependencies:
       '@cloudbase/adapter-wx_mp': 1.3.1
       core-js-pure: 3.49.0
