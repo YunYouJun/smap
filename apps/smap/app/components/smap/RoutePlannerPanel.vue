@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import type { NavigationStatus } from './navigationSimulation'
 import type { RouteEndpointRole, RouteOption, RoutePlace, TravelMode } from './types'
 
 interface Props {
@@ -6,13 +8,14 @@ interface Props {
   activeRouteId: string
   activeSearchRole: RouteEndpointRole | null
   destination: RoutePlace
-  isNavigating: boolean
+  navigationStatus: NavigationStatus
   origin: RoutePlace
   routes: RouteOption[]
   modes: TravelMode[]
 }
 
 interface Emits {
+  endNavigation: []
   focusRouteSearch: [role: RouteEndpointRole]
   resetRouteEndpoint: [role: RouteEndpointRole]
   selectMode: [modeId: string]
@@ -21,8 +24,38 @@ interface Emits {
   toggleNavigation: []
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+
+const navigationActionLabel = computed(() => {
+  if (props.navigationStatus === 'navigating')
+    return '暂停导航'
+
+  if (props.navigationStatus === 'paused')
+    return '继续导航'
+
+  if (props.navigationStatus === 'arrived')
+    return '重新导航'
+
+  return '开始导航'
+})
+
+const navigationActionSymbol = computed(() => {
+  if (props.navigationStatus === 'navigating')
+    return 'Ⅱ'
+
+  if (props.navigationStatus === 'paused')
+    return '▶'
+
+  if (props.navigationStatus === 'arrived')
+    return '↻'
+
+  return '▶'
+})
+
+const canEndNavigation = computed(() => {
+  return props.navigationStatus === 'navigating' || props.navigationStatus === 'paused'
+})
 </script>
 
 <template>
@@ -120,10 +153,20 @@ const emit = defineEmits<Emits>()
       </button>
     </section>
 
-    <button class="route-panel__start" type="button" @click="emit('toggleNavigation')">
-      <span aria-hidden="true">{{ isNavigating ? 'Ⅱ' : '▶' }}</span>
-      {{ isNavigating ? '暂停导航' : '开始导航' }}
-    </button>
+    <div class="route-panel__navigation-actions">
+      <button class="route-panel__start" type="button" @click="emit('toggleNavigation')">
+        <span aria-hidden="true">{{ navigationActionSymbol }}</span>
+        {{ navigationActionLabel }}
+      </button>
+      <button
+        v-if="canEndNavigation"
+        class="route-panel__end"
+        type="button"
+        @click="emit('endNavigation')"
+      >
+        结束
+      </button>
+    </div>
   </aside>
 </template>
 
@@ -460,13 +503,20 @@ const emit = defineEmits<Emits>()
   font-size: 11px;
 }
 
-.route-panel__start {
+.route-panel__navigation-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.route-panel__start,
+.route-panel__end {
   display: inline-flex;
   gap: 9px;
   align-items: center;
   justify-content: center;
   min-height: 44px;
-  margin-top: 12px;
   border: 1px solid rgba(40, 242, 237, 0.62);
   border-radius: 8px;
   color: #efffff;
@@ -475,6 +525,16 @@ const emit = defineEmits<Emits>()
   font-size: 16px;
   font-weight: 780;
   cursor: pointer;
+}
+
+.route-panel__end {
+  min-width: 58px;
+  border-color: rgba(171, 220, 229, 0.2);
+  color: #b9ced6;
+  background: rgba(8, 27, 36, 0.82);
+  box-shadow: none;
+  font-size: 14px;
+  font-weight: 680;
 }
 
 @media (max-width: 1120px) {

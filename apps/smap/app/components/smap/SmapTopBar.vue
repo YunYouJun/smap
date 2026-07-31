@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { NavigationStatus } from './navigationSimulation'
 import type { MobileService, MobileServiceItem, RouteEndpointRole, RoutePlace } from './types'
 import SmapLogo from './SmapLogo.vue'
 
@@ -7,7 +8,7 @@ interface Props {
   activeService: MobileService
   activeSearchRole: RouteEndpointRole | null
   destination: RoutePlace
-  isNavigating: boolean
+  navigationStatus: NavigationStatus
   origin: RoutePlace
   searchQuery: string
   searchResults: RoutePlace[]
@@ -30,6 +31,18 @@ const emit = defineEmits<Emits>()
 const isSearchOpen = computed(() => props.activeSearchRole !== null)
 const activeSearchLabel = computed(() => props.activeSearchRole === 'origin' ? '起点' : '终点')
 const searchPlaceholder = computed(() => `搜索${activeSearchLabel.value}`)
+const navigationStatusText = computed(() => {
+  if (props.navigationStatus === 'navigating')
+    return '自动导航中'
+
+  if (props.navigationStatus === 'paused')
+    return '导航已暂停'
+
+  if (props.navigationStatus === 'arrived')
+    return '已抵达目的地'
+
+  return '导航系统正常'
+})
 
 function updateSearchQuery(event: Event): void {
   emit('updateRouteSearchQuery', (event.target as HTMLInputElement).value)
@@ -192,9 +205,13 @@ function serviceSymbol(icon: MobileServiceItem['icon']): string {
 
     <div class="smap-topbar__account">
       <slot name="account">
-        <div class="smap-topbar__status" :class="{ 'smap-topbar__status--active': isNavigating }">
+        <div
+          class="smap-topbar__status"
+          :class="{ 'smap-topbar__status--active': navigationStatus === 'navigating' }"
+          :data-status="navigationStatus"
+        >
           <span class="smap-topbar__pulse"></span>
-          {{ isNavigating ? '自动导航中' : '导航系统正常' }}
+          {{ navigationStatusText }}
         </div>
       </slot>
     </div>

@@ -49,7 +49,7 @@ apps/smap/
 
 关键配置：
 
-- `ssr: false`：保持为 SPA，便于 YunLeFun SSO 和 CloudBase auth 在浏览器端运行。
+- `ssr: false`：保持为 SPA；YunLeFun SSO v3 使用顶层重定向，静态模式采用标签页会话，BFF 模式仅以内存临时身份生成 proof。
 - 原生 Nuxt 路由：按页面拆包，避免为自定义地图 UI 加载完整移动组件运行时。
 - `app:generate`：生成静态托管产物。
 
@@ -66,10 +66,35 @@ cp apps/smap/.env.example apps/smap/.env
 ```bash
 NUXT_PUBLIC_SMAP_EPHEMERIS_API=
 NUXT_PUBLIC_YUNLEFUN_CLOUDBASE_ENV=yunlefun-8g7ybcxc7345c490
+NUXT_PUBLIC_YUNLEFUN_SSO_CLIENT_ID=smap-web
+NUXT_PUBLIC_YUNLEFUN_SSO_EXCHANGE_URL=https://api.yunle.fun/sso-ticket
 NUXT_PUBLIC_YUNLEFUN_SSO_ORIGIN=https://www.yunle.fun
+NUXT_PUBLIC_YUNLEFUN_SSO_REDIRECT_URI=https://smap.yunle.fun/tabs/profile
+NUXT_PUBLIC_YUNLEFUN_SSO_SCOPE=identity:bootstrap
+NUXT_PUBLIC_YUNLEFUN_SSO_SESSION_MODE=browser
 ```
 
 登录入口放在“我的”页。地图导航第一屏不展示账号按钮，避免干扰路线决策。
+
+SSO v3 不再使用隐藏 iframe 或 popup。`smap-web` 必须在服务端 Client Registry 中绑定精确的 production issuer、HTTPS Origin、回跳 URI 和 scope。本地联调也必须使用已登记的 HTTPS 地址；默认的 `http://127.0.0.1` 只展示配置提示，不会发起降级登录。
+
+应用按会话职责提供两种模式：
+
+| 模式 | SDK 接口 | CloudBase persistence | 适用场景 |
+| --- | --- | --- | --- |
+| `browser` | `adoptSsoCode()` | `session` | 纯静态 SPA，身份在当前标签页会话内有效 |
+| `bff` | `adoptSsoIdentityProof()` | `none` | 同源 BFF，以双证明换取 host-only opaque cookie |
+
+`browser` 是默认模式，不要求 SMAP 自建 BFF，可在 CloudBase 安全规则约束下直接访问属于当前身份的数据；它不提供设备管理、服务端撤销或跨浏览器长期会话。
+
+启用 BFF 时增加：
+
+```bash
+NUXT_PUBLIC_YUNLEFUN_SSO_SESSION_MODE=bff
+NUXT_PUBLIC_YUNLEFUN_SSO_SESSION_ENDPOINT=/api/session
+```
+
+SMAP 约定该同源端点使用 `GET` 恢复账号、`POST` 接收 SSO identity proof 并创建会话、`DELETE` 退出会话。临时 CloudBase 身份在 proof 交换后立即清除。
 
 ## 静态部署
 

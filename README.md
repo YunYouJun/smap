@@ -105,6 +105,7 @@ pnpm docs:build
 - [快速开始](./docs/guide/getting-started.md)
 - [配置与部署](./docs/guide/configuration.md)
 - [设计沉淀](./docs/design/index.md)
+- [产品路线图](./docs/roadmap.md)
 - [子应用说明](./apps/smap/README.md)
 - [地图 SDK](./packages/smap-sdk/README.md)
 

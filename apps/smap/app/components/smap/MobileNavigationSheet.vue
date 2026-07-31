@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type {
+  NavigationEvent,
+  NavigationLeg,
+  NavigationSpeed,
+  NavigationStatus,
+  NavigationSummary,
+} from './navigationSimulation'
+import { navigationStatusLabel } from './navigationSimulation'
+import type {
   ExploreSpot,
   MapTool,
   MobileService,
@@ -18,10 +26,16 @@ interface Props {
   destination: RoutePlace
   enabledMapToolIds: readonly string[]
   exploreSpots: ExploreSpot[]
-  isNavigating: boolean
   isRideRequested: boolean
+  currentNavigationLeg?: NavigationLeg
+  latestNavigationEvent?: NavigationEvent
   mapTools: MapTool[]
+  navigationProgress: number
+  navigationSpeed: NavigationSpeed
+  navigationStatus: NavigationStatus
+  navigationSummary?: NavigationSummary
   profileActions: ProfileAction[]
+  remainingDuration: string
   rideOption: RideOption
   rideOptions: RideOption[]
   origin: RoutePlace
@@ -31,10 +45,12 @@ interface Props {
 }
 
 interface Emits {
+  endNavigation: []
   selectRideOption: [optionId: string]
   selectRoute: [routeId: string]
   selectService: [service: MobileService]
   selectWaypoint: [waypointId: string]
+  setNavigationSpeed: [speed: NavigationSpeed]
   toggleMapTool: [toolId: string]
   toggleNavigation: []
   toggleRideRequest: []
@@ -47,6 +63,7 @@ const slots = defineSlots<{
 }>()
 
 const smapFallbackAvatar = '/smap/avatar-fallback.svg'
+const speedOptions: NavigationSpeed[] = [1, 2, 4]
 
 const rideCtaLabel = computed(() => formatRideCtaLabel(props.rideOption, props.isRideRequested))
 const rideCtaDetail = computed(() => formatRideCtaDetail(
@@ -54,6 +71,40 @@ const rideCtaDetail = computed(() => formatRideCtaDetail(
   props.isRideRequested,
   props.origin.label,
 ))
+
+const navigationNotice = computed(() => {
+  if (props.latestNavigationEvent)
+    return `${props.latestNavigationEvent.title}：${props.latestNavigationEvent.detail}`
+
+  return '演示导航将在本地推进，不会请求定位或远端服务'
+})
+
+const navigationActionLabel = computed(() => {
+  if (props.navigationStatus === 'navigating')
+    return '暂停导航'
+
+  if (props.navigationStatus === 'paused')
+    return '继续导航'
+
+  if (props.navigationStatus === 'arrived')
+    return '重新导航'
+
+  return '开始导航'
+})
+
+const canEndNavigation = computed(() => {
+  return props.navigationStatus === 'navigating' || props.navigationStatus === 'paused'
+})
+
+const navigationLegLabel = computed(() => {
+  if (props.navigationStatus === 'arrived')
+    return '行程已完成'
+
+  if (props.currentNavigationLeg)
+    return `${props.currentNavigationLeg.fromLabel} → ${props.currentNavigationLeg.toLabel}`
+
+  return `${props.origin.label} → ${props.destination.label}`
+})
 
 function isMapToolEnabled(toolId: string): boolean {
   return props.enabledMapToolIds.includes(toolId)
@@ -81,7 +132,7 @@ function selectExploreSpot(spot: ExploreSpot): void {
             <path d="M12 8v5M12 17h.01" />
           </svg>
         </span>
-        <span>星际风暴提醒：前方 1 处建议减速避让</span>
+        <span>{{ navigationNotice }}</span>
       </div>
 
       <div class="mobile-sheet__route-preferences" aria-label="路线偏好">
@@ -126,29 +177,66 @@ function selectExploreSpot(spot: ExploreSpot): void {
 
       <div class="mobile-sheet__summary">
         <div class="mobile-sheet__summary-copy">
-          <span class="mobile-sheet__eyebrow">推荐路线</span>
+          <span class="mobile-sheet__eyebrow">{{ navigationStatusLabel(navigationStatus) }}</span>
           <h2 class="mobile-sheet__summary-title">
-            预计
-            <strong class="mobile-sheet__summary-value">{{ route.duration.replace(' 光时', '') }}</strong>
-            光时
+            <template v-if="navigationStatus === 'arrived'">
+              已抵达
+            </template>
+            <template v-else>
+              {{ navigationStatus === 'idle' ? '预计' : '剩余' }}
+              <strong class="mobile-sheet__summary-value">
+                {{ (navigationStatus === 'idle' ? route.duration : remainingDuration).replace(' 光时', '') }}
+              </strong>
+              光时
+            </template>
           </h2>
           <p class="mobile-sheet__summary-meta">
-            {{ origin.label }} → {{ destination.label }} · {{ route.mode }} · {{ route.stops }} 个跃迁点
+            {{ navigationLegLabel }} · {{ route.mode }}
+          </p>
+          <div class="mobile-sheet__navigation-progress" :aria-label="`导航进度 ${navigationProgress}%`">
+            <span :style="{ width: `${navigationProgress}%` }"></span>
+          </div>
+          <div class="mobile-sheet__simulation-speed" aria-label="演示速度">
+            <span>速度</span>
+            <button
+              v-for="speed in speedOptions"
+              :key="speed"
+              type="button"
+              :aria-pressed="navigationSpeed === speed"
+              :class="{ 'mobile-sheet__simulation-speed--active': navigationSpeed === speed }"
+              @click="emit('setNavigationSpeed', speed)"
+            >
+              {{ speed }}×
+            </button>
+            <strong>{{ navigationProgress }}%</strong>
+          </div>
+          <p v-if="navigationSummary" class="mobile-sheet__arrival-summary">
+            {{ navigationSummary.completedLegs }} 个航段 · {{ navigationSummary.completedEvents }} 条事件
           </p>
         </div>
       </div>
 
-      <button class="mobile-sheet__start" type="button" @click="emit('toggleNavigation')">
-        <span class="mobile-sheet__start-icon" aria-hidden="true">
-          <svg v-if="isNavigating" viewBox="0 0 24 24">
-            <path d="M8 5v14M16 5v14" />
-          </svg>
-          <svg v-else viewBox="0 0 24 24">
-            <path d="m8 5 11 7-11 7V5Z" />
-          </svg>
-        </span>
-        {{ isNavigating ? '暂停导航' : '开始导航' }}
-      </button>
+      <div class="mobile-sheet__navigation-actions">
+        <button class="mobile-sheet__start" type="button" @click="emit('toggleNavigation')">
+          <span class="mobile-sheet__start-icon" aria-hidden="true">
+            <svg v-if="navigationStatus === 'navigating'" viewBox="0 0 24 24">
+              <path d="M8 5v14M16 5v14" />
+            </svg>
+            <svg v-else viewBox="0 0 24 24">
+              <path d="m8 5 11 7-11 7V5Z" />
+            </svg>
+          </span>
+          {{ navigationActionLabel }}
+        </button>
+        <button
+          v-if="canEndNavigation"
+          class="mobile-sheet__end-navigation"
+          type="button"
+          @click="emit('endNavigation')"
+        >
+          结束
+        </button>
+      </div>
     </div>
 
     <div
@@ -323,7 +411,10 @@ function selectExploreSpot(spot: ExploreSpot): void {
           <h2 class="mobile-sheet__section-title">SMAP 账号</h2>
           <p class="mobile-sheet__section-meta">登录 YunLeFun 后同步收藏、订单与导航偏好</p>
         </div>
-        <div v-if="slots['profile-account']" class="mobile-sheet__profile-account">
+        <div
+          v-if="activeService === 'profile' && slots['profile-account']"
+          class="mobile-sheet__profile-account"
+        >
           <slot name="profile-account"></slot>
         </div>
       </div>
@@ -616,6 +707,66 @@ function selectExploreSpot(spot: ExploreSpot): void {
     white-space: nowrap;
   }
 
+  .mobile-sheet__navigation-progress {
+    height: 6px;
+    margin-top: 10px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--smap-ui-surface-soft);
+  }
+
+  .mobile-sheet__navigation-progress span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--smap-primary), var(--smap-green));
+    transition: width 300ms ease;
+  }
+
+  .mobile-sheet__simulation-speed {
+    display: grid;
+    grid-template-columns: 1fr repeat(3, 42px) auto;
+    gap: 6px;
+    align-items: center;
+    margin-top: 8px;
+    color: var(--smap-ui-muted);
+    font-size: 12px;
+  }
+
+  .mobile-sheet__simulation-speed button {
+    min-height: 28px;
+    border: 1px solid var(--smap-ui-border);
+    border-radius: 999px;
+    color: var(--smap-ui-muted);
+    background: var(--smap-ui-card);
+    font: inherit;
+    font-weight: 760;
+  }
+
+  .mobile-sheet__simulation-speed button.mobile-sheet__simulation-speed--active {
+    border-color: var(--smap-primary);
+    color: var(--smap-primary);
+    background: var(--smap-primary-soft);
+  }
+
+  .mobile-sheet__simulation-speed strong {
+    color: var(--smap-primary);
+    font-size: 13px;
+  }
+
+  .mobile-sheet__arrival-summary {
+    margin: 7px 0 0;
+    color: var(--smap-green);
+    font-size: 12px;
+    font-weight: 720;
+  }
+
+  .mobile-sheet__navigation-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
   .mobile-sheet__start {
     display: inline-flex;
     gap: 10px;
@@ -630,6 +781,17 @@ function selectExploreSpot(spot: ExploreSpot): void {
     font: inherit;
     font-size: 22px;
     font-weight: 860;
+  }
+
+  .mobile-sheet__end-navigation {
+    min-width: 62px;
+    border: 1px solid var(--smap-ui-border);
+    border-radius: 999px;
+    color: var(--smap-ui-muted);
+    background: var(--smap-ui-card);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 760;
   }
 
   .mobile-sheet__start-icon {

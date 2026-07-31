@@ -1,4 +1,13 @@
 import type { ComputedRef, Ref } from 'vue'
+import type {
+  NavigationEvent,
+  NavigationLeg,
+  NavigationPosition,
+  NavigationSimulationState,
+  NavigationSpeed,
+  NavigationStatus,
+  NavigationSummary,
+} from './navigationSimulation'
 import type { SmapEphemerisState } from './smapProviders'
 import type {
   ExploreSpot,
@@ -15,8 +24,15 @@ import type {
   TravelMode,
   Waypoint,
 } from './types'
-import { computed, onMounted, readonly, shallowRef } from 'vue'
+import { computed, onMounted, onScopeDispose, readonly, shallowRef } from 'vue'
 import { useRuntimeConfig, useState } from '#imports'
+import {
+  createNavigationPlan,
+  createNavigationSimulation,
+  formatRemainingDuration,
+  getNavigationPosition,
+  reduceNavigationSimulation,
+} from './navigationSimulation'
 import {
   createRouteOptions,
   createTravelModes,
@@ -66,20 +82,28 @@ interface UseSmapNavigationReturn {
   activeRouteWaypoints: ComputedRef<Waypoint[]>
   activeSearchRole: Readonly<Ref<RouteEndpointRole | null>>
   alternativeRoutePoints: ComputedRef<RouteLine[]>
+  currentNavigationLeg: ComputedRef<NavigationLeg | undefined>
   destination: ComputedRef<RoutePlace>
   enabledMapToolIds: Readonly<Ref<readonly string[]>>
+  endNavigation: () => void
   ephemerisState: Readonly<Ref<SmapEphemerisState>>
   exploreSpots: ExploreSpot[]
   hazardZones: HazardZone[]
-  isNavigating: Readonly<Ref<boolean>>
   isRideRequested: Readonly<Ref<boolean>>
+  latestNavigationEvent: ComputedRef<NavigationEvent | undefined>
   mapTools: MapTool[]
   mobileServices: MobileServiceItem[]
+  navigationEvents: ComputedRef<NavigationEvent[]>
+  navigationPosition: ComputedRef<NavigationPosition | undefined>
+  navigationSpeed: Readonly<Ref<NavigationSpeed>>
+  navigationStatus: Readonly<Ref<NavigationStatus>>
+  navigationSummary: ComputedRef<NavigationSummary | undefined>
   origin: ComputedRef<RoutePlace>
   profileActions: ProfileAction[]
   rideOptions: RideOption[]
   routeOptions: Readonly<Ref<RouteOption[]>>
   routeProgress: ComputedRef<number>
+  remainingDuration: ComputedRef<string>
   routeSearchQuery: Readonly<Ref<string>>
   routeSearchResults: ComputedRef<RoutePlace[]>
   clearRouteSearch: () => void
@@ -91,6 +115,7 @@ interface UseSmapNavigationReturn {
   selectRoute: (routeId: string) => void
   selectRouteSearchResult: (role: RouteEndpointRole, placeId: string) => void
   selectWaypoint: (waypointId: string) => void
+  setNavigationSpeed: (speed: NavigationSpeed) => void
   selectedWaypoint: ComputedRef<Waypoint>
   selectedWaypointId: Readonly<Ref<string>>
   submitRouteSearch: () => void
@@ -114,6 +139,7 @@ const defaultRoute = initialRouteOptions[0]!
 const defaultMode = initialTravelModes[0]!
 const defaultRideOption = rideOptions[0]!
 const defaultWaypoint = waypoints[waypoints.length - 1]!
+const defaultNavigationPlan = createNavigationPlan(defaultRoute, waypoints)
 
 export function useSmapNavigation(initialService: MobileService = 'navigation'): UseSmapNavigationReturn {
   const config = useRuntimeConfig() as unknown as SmapRuntimeConfig
@@ -130,7 +156,11 @@ export function useSmapNavigation(initialService: MobileService = 'navigation'):
   const activeSearchRole = shallowRef<RouteEndpointRole | null>(null)
   const routeSearchQuery = shallowRef('')
   const zoomLevel = useState<number>('smap:zoom-level', () => 1)
-  const isNavigating = useState<boolean>('smap:is-navigating', () => false)
+  const navigationSimulation = useState<NavigationSimulationState>(
+    'smap:navigation-simulation',
+    () => createNavigationSimulation(defaultNavigationPlan),
+  )
+  const navigationSpeed = useState<NavigationSpeed>('smap:navigation-speed', () => 1)
   const isRideRequested = useState<boolean>('smap:is-ride-requested', () => false)
   const enabledMapToolIds = useState<string[]>('smap:enabled-map-tool-ids', () => [...defaultEnabledMapToolIds])
   const ephemerisState = useState<SmapEphemerisState>('smap:ephemeris-state', createStaticSmapEphemerisState)
@@ -207,6 +237,21 @@ export function useSmapNavigation(initialService: MobileService = 'navigation'):
       })
   })
 
+  const navigationPlan = computed(() => createNavigationPlan(activeRoute.value, waypoints))
+  const navigationStatus = computed(() => navigationSimulation.value.status)
+  const navigationEvents = computed(() => navigationSimulation.value.events)
+  const latestNavigationEvent = computed(() => navigationEvents.value.at(-1))
+  const navigationSummary = computed(() => navigationSimulation.value.summary)
+  const currentNavigationLeg = computed(() => {
+    return navigationPlan.value.legs[navigationSimulation.value.currentLegIndex]
+  })
+  const navigationPosition = computed(() => {
+    return getNavigationPosition(navigationSimulation.value, navigationPlan.value)
+  })
+  const remainingDuration = computed(() => {
+    return formatRemainingDuration(activeRoute.value.duration, navigationSimulation.value.progress)
+  })
+
   const activeRoutePoints = computed(() => {
     return activeRouteWaypoints.value
       .map(waypoint => `${waypoint.x},${waypoint.y}`)
@@ -231,7 +276,22 @@ export function useSmapNavigation(initialService: MobileService = 'navigation'):
       })
   })
 
-  const routeProgress = computed(() => Math.min(100, Math.round((activeRoute.value.stops / 18) * 100)))
+  const routeProgress = computed(() => navigationSimulation.value.progress)
+
+  let navigationTimer: ReturnType<typeof setInterval> | undefined
+
+  if (import.meta.client) {
+    onMounted(() => {
+      navigationTimer = setInterval(() => {
+        advanceNavigation()
+      }, 800)
+    })
+  }
+
+  onScopeDispose(() => {
+    if (navigationTimer)
+      clearInterval(navigationTimer)
+  })
 
   function replaceRouteOptions(nextRoutes: RouteOption[]): void {
     const fallbackRoutes = nextRoutes.length > 0 ? nextRoutes : [...initialRouteOptions]
@@ -242,12 +302,12 @@ export function useSmapNavigation(initialService: MobileService = 'navigation'):
     travelModes.value = nextModes
     activeRouteId.value = nextRoute.id
     activeModeId.value = nextModes[0]?.id ?? nextRoute.id
+    resetNavigationSimulation()
   }
 
   function replanRoute(): void {
     replaceRouteOptions(createRouteOptions(origin.value.waypointId, destination.value.waypointId))
     selectedWaypointId.value = destination.value.waypointId
-    isNavigating.value = false
   }
 
   function oppositeRole(role: RouteEndpointRole): RouteEndpointRole {
@@ -282,6 +342,7 @@ export function useSmapNavigation(initialService: MobileService = 'navigation'):
     activeRouteId.value = route.id
     activeModeId.value = route.id
     smapClient.selectRoute(route.id)
+    resetNavigationSimulation()
   }
 
   function selectMobileService(service: MobileService): void {
@@ -296,8 +357,10 @@ export function useSmapNavigation(initialService: MobileService = 'navigation'):
 
     activeModeId.value = mode.id
 
-    if (routeOptions.value.some(route => route.id === mode.id))
+    if (routeOptions.value.some(route => route.id === mode.id)) {
       activeRouteId.value = mode.id
+      resetNavigationSimulation()
+    }
   }
 
   function selectRideOption(optionId: string): void {
@@ -374,7 +437,58 @@ export function useSmapNavigation(initialService: MobileService = 'navigation'):
   }
 
   function toggleNavigation(): void {
-    isNavigating.value = !isNavigating.value
+    const status = navigationSimulation.value.status
+    const type = status === 'navigating'
+      ? 'pause'
+      : status === 'paused'
+        ? 'resume'
+        : 'start'
+
+    navigationSimulation.value = reduceNavigationSimulation(
+      navigationSimulation.value,
+      navigationPlan.value,
+      { type },
+    )
+
+    const latestEvent = navigationSimulation.value.events.at(-1)
+    if (latestEvent?.waypointId)
+      selectedWaypointId.value = latestEvent.waypointId
+  }
+
+  function endNavigation(): void {
+    navigationSimulation.value = reduceNavigationSimulation(
+      navigationSimulation.value,
+      navigationPlan.value,
+      { type: 'end' },
+    )
+  }
+
+  function setNavigationSpeed(speed: NavigationSpeed): void {
+    navigationSpeed.value = speed
+  }
+
+  function advanceNavigation(): void {
+    if (navigationSimulation.value.status !== 'navigating')
+      return
+
+    const previousEventCount = navigationSimulation.value.events.length
+    const nextState = reduceNavigationSimulation(
+      navigationSimulation.value,
+      navigationPlan.value,
+      { type: 'tick', amount: navigationSpeed.value },
+    )
+
+    navigationSimulation.value = nextState
+
+    if (nextState.events.length > previousEventCount) {
+      const latestEvent = nextState.events.at(-1)
+      if (latestEvent?.waypointId)
+        selectedWaypointId.value = latestEvent.waypointId
+    }
+  }
+
+  function resetNavigationSimulation(): void {
+    navigationSimulation.value = createNavigationSimulation(navigationPlan.value)
   }
 
   function toggleRideRequest(): void {
@@ -410,20 +524,28 @@ export function useSmapNavigation(initialService: MobileService = 'navigation'):
     activeRouteWaypoints,
     activeSearchRole: readonly(activeSearchRole),
     alternativeRoutePoints,
+    currentNavigationLeg,
     destination,
     enabledMapToolIds: readonly(enabledMapToolIds),
+    endNavigation,
     ephemerisState: readonly(ephemerisState),
     exploreSpots,
     hazardZones,
-    isNavigating: readonly(isNavigating),
     isRideRequested: readonly(isRideRequested),
+    latestNavigationEvent,
     mapTools,
     mobileServices,
+    navigationEvents,
+    navigationPosition,
+    navigationSpeed: readonly(navigationSpeed),
+    navigationStatus: readonly(navigationStatus),
+    navigationSummary,
     origin,
     profileActions,
     rideOptions,
     routeOptions,
     routeProgress,
+    remainingDuration,
     routeSearchQuery: readonly(routeSearchQuery),
     routeSearchResults,
     clearRouteSearch,
@@ -437,6 +559,7 @@ export function useSmapNavigation(initialService: MobileService = 'navigation'):
     selectWaypoint,
     selectedWaypoint,
     selectedWaypointId: readonly(selectedWaypointId),
+    setNavigationSpeed,
     submitRouteSearch,
     swapRouteEndpoints,
     telemetryMetrics,

@@ -1,8 +1,31 @@
-import type { SsoFailureReason, SsoMode, SsoSetSessionAuth } from '@yunlefun/sso'
+import type {
+  SsoAuthorizationResult,
+  SsoFailureReason,
+} from '@yunlefun/sso'
+import type {
+  SsoIdentityAdoptionAuth,
+  SsoIdentityProof,
+} from '@yunlefun/sso/browser'
 import type { ComputedRef, Ref } from 'vue'
+import type {
+  YunlefunSsoConfig,
+  YunlefunSsoConfigResult,
+  YunlefunSsoSessionMode,
+} from '~/utils/yunlefunSsoConfig'
+import {
+  adoptSsoCode,
+  consumeSsoRedirect,
+  hasSsoRedirectResult,
+  startSsoRedirect,
+} from '@yunlefun/sso'
+import {
+  adoptSsoIdentityProof,
+  requestHostSsoAuthorization,
+} from '@yunlefun/sso/browser'
 import { computed, readonly } from 'vue'
 import { useRuntimeConfig, useState } from '#imports'
 import { formatSsoFailureMessage, formatUnexpectedAuthError } from '~/utils/authErrors'
+import { resolveYunlefunSsoConfig } from '~/utils/yunlefunSsoConfig'
 
 export type YunlefunAuthStatus = 'idle' | 'checking' | 'signed-in' | 'signed-out' | 'signing-in' | 'error'
 
@@ -16,11 +39,18 @@ export interface YunlefunAccount {
 interface YunlefunRuntimeConfig {
   public: {
     yunlefunCloudbaseEnv?: string
+    yunlefunSsoClientId?: string
+    yunlefunSsoExchangeUrl?: string
     yunlefunSsoOrigin?: string
+    yunlefunSsoRedirectUri?: string
+    yunlefunSsoScope?: string
+    yunlefunSsoSessionEndpoint?: string
+    yunlefunSsoSessionMode?: string
   }
 }
 
 interface CloudbaseUser {
+  id?: string
   uid?: string
   name?: string
   displayName?: string
@@ -37,11 +67,14 @@ interface CloudbaseLoginState {
   user?: CloudbaseUser | null
 }
 
-interface YunlefunAuthClient extends SsoSetSessionAuth {
+interface BffSessionResponse {
+  account?: CloudbaseUser | null
+}
+
+interface YunlefunAuthClient extends SsoIdentityAdoptionAuth {
   currentUser?: CloudbaseUser | null
   getLoginState: () => Promise<CloudbaseLoginState | null>
-  onLoginStateChanged?: (callback: (state: CloudbaseLoginState | null) => void) => void
-  signOut?: () => Promise<unknown>
+  signOut: () => Promise<unknown>
 }
 
 interface YunlefunCloudbaseApp {
@@ -62,18 +95,17 @@ interface UseYunlefunAuthReturn {
   inNativeApp: Readonly<Ref<boolean>>
   initialize: () => Promise<void>
   isAuthenticated: ComputedRef<boolean>
-  refresh: () => Promise<void>
-  signIn: (mode?: SsoMode) => Promise<boolean>
+  sessionMode: ComputedRef<YunlefunSsoSessionMode>
+  signIn: () => Promise<void>
   signOut: () => Promise<void>
   status: Readonly<Ref<YunlefunAuthStatus>>
-  syncSilently: () => Promise<boolean>
 }
 
 let cachedApp: YunlefunCloudbaseApp | undefined
 let cachedAuth: YunlefunAuthClient | undefined
 let pendingApp: Promise<YunlefunCloudbaseApp | undefined> | undefined
 let pendingAuth: Promise<YunlefunAuthClient | undefined> | undefined
-let loginStateListenerAttached = false
+let cachedPersistence: 'none' | 'session' | undefined
 
 export function useYunlefunAuth(): UseYunlefunAuthReturn {
   const config = useRuntimeConfig() as unknown as YunlefunRuntimeConfig
@@ -81,104 +113,265 @@ export function useYunlefunAuth(): UseYunlefunAuthReturn {
   const status = useState<YunlefunAuthStatus>('yunlefun:auth:status', () => 'idle')
   const lastFailure = useState<SsoFailureReason | null>('yunlefun:auth:last-failure', () => null)
   const lastError = useState<string | null>('yunlefun:auth:last-error', () => null)
-  const silentAttempted = useState<boolean>('yunlefun:auth:silent-attempted', () => false)
+  const initialized = useState<boolean>('yunlefun:auth:v3:initialized', () => false)
   const inNativeApp = useState<boolean>('yunlefun:auth:in-native-app', () => false)
 
-  const cloudbaseEnv = computed(() => normalizeConfigValue(config.public.yunlefunCloudbaseEnv))
-  const ssoOrigin = computed(() => normalizeConfigValue(config.public.yunlefunSsoOrigin))
   const isAuthenticated = computed(() => Boolean(account.value))
   const displayName = computed(() => account.value?.displayName ?? '')
   const errorMessage = computed(() => lastError.value ?? formatSsoFailureMessage(lastFailure.value))
+  const sessionMode = computed<YunlefunSsoSessionMode>(() => {
+    return config.public.yunlefunSsoSessionMode === 'bff' ? 'bff' : 'browser'
+  })
 
   async function initialize(): Promise<void> {
+    if (!import.meta.client || initialized.value)
+      return
+
+    initialized.value = true
+    status.value = 'checking'
+    lastFailure.value = null
+    lastError.value = null
+
+    const hadRedirectResult = hasSsoRedirectResult(window.location.hash)
+    let attemptedAuthorization = hadRedirectResult
+
     try {
-      const auth = await ensureAuth(cloudbaseEnv.value)
-      if (!auth)
+      const redirectResult = consumeSsoRedirect()
+
+      if (redirectResult) {
+        if (!redirectResult.ok) {
+          applyFailure(redirectResult.reason)
+          return
+        }
+
+        await adoptAuthorization(redirectResult, resolveConfigOrThrow())
+        return
+      }
+
+      if (hadRedirectResult) {
+        applyFailure('invalid_request')
+        return
+      }
+
+      const resolved = resolveConfig()
+      if (!resolved.ok) {
+        status.value = 'signed-out'
+        return
+      }
+
+      if (await restoreSession(resolved.config))
         return
 
-      attachLoginStateListener(auth, syncLoginState)
-      await refresh()
+      const hostAuthorization = await requestHostSsoAuthorization(resolved.config.redirect)
+      if (!hostAuthorization) {
+        status.value = 'signed-out'
+        return
+      }
+
+      attemptedAuthorization = true
+      inNativeApp.value = true
+      await adoptAuthorization(hostAuthorization, resolved.config)
     }
     catch {
       account.value = null
-      status.value = 'signed-out'
-      lastFailure.value = null
-      lastError.value = null
+      status.value = attemptedAuthorization ? 'error' : 'signed-out'
+      lastError.value = attemptedAuthorization ? formatUnexpectedAuthError() : null
     }
   }
 
-  async function refresh(): Promise<void> {
-    const auth = await ensureAuth(cloudbaseEnv.value)
-    if (!auth)
+  async function signIn(): Promise<void> {
+    if (!import.meta.client)
       return
 
-    const state = await getLoginState(auth)
-    syncLoginState(state)
-  }
+    const resolved = resolveConfig()
+    if (!resolved.ok) {
+      status.value = 'error'
+      lastFailure.value = null
+      lastError.value = resolved.message
+      return
+    }
 
-  async function signIn(mode: SsoMode = 'interactive'): Promise<boolean> {
-    if (!import.meta.client)
-      return false
-
-    status.value = mode === 'interactive' ? 'signing-in' : 'checking'
+    status.value = 'signing-in'
     lastFailure.value = null
     lastError.value = null
 
     try {
-      const auth = await ensureAuth(cloudbaseEnv.value)
-      if (!auth)
-        return false
-
-      attachLoginStateListener(auth, syncLoginState)
-      const { isInYunleApp, signInWithSso } = await import('@yunlefun/sso')
-      inNativeApp.value = isInYunleApp()
-      const result = await signInWithSso(auth, {
-        mode,
-        ...(ssoOrigin.value ? { ssoOrigin: ssoOrigin.value } : {}),
-      })
-
-      if (result.ok) {
-        await refresh()
-        return true
-      }
-
-      lastFailure.value = mode === 'interactive' ? result.reason : null
-      await refresh()
-      if (mode === 'interactive' && result.reason !== 'not_authenticated')
-        status.value = 'error'
-      return false
+      await startSsoRedirect(resolved.config.redirect)
     }
     catch {
-      lastError.value = mode === 'interactive' ? formatUnexpectedAuthError() : null
-      status.value = mode === 'interactive' ? 'error' : 'signed-out'
-      return false
+      status.value = 'error'
+      lastError.value = formatUnexpectedAuthError()
     }
-  }
-
-  async function syncSilently(): Promise<boolean> {
-    if (silentAttempted.value || isAuthenticated.value)
-      return isAuthenticated.value
-
-    silentAttempted.value = true
-    return signIn('silent')
   }
 
   async function signOut(): Promise<void> {
-    const auth = await ensureAuth(cloudbaseEnv.value)
-    if (auth?.signOut)
-      await auth.signOut()
+    const resolved = import.meta.client ? resolveConfig() : null
+    if (resolved?.ok && resolved.config.sessionMode === 'bff' && resolved.config.sessionEndpoint) {
+      await fetch(resolved.config.sessionEndpoint, {
+        method: 'DELETE',
+        credentials: 'include',
+        cache: 'no-store',
+        headers: {
+          accept: 'application/json',
+        },
+      }).catch(() => undefined)
+    }
+
+    const auth = await ensureAuth(
+      normalizeConfigValue(config.public.yunlefunCloudbaseEnv),
+      sessionMode.value === 'browser' ? 'session' : 'none',
+    )
+    if (auth) {
+      try {
+        await auth.signOut()
+      }
+      catch {
+        // The SSO v3 identity is already memory-only; local state can still be cleared.
+      }
+    }
 
     account.value = null
     status.value = 'signed-out'
     lastFailure.value = null
     lastError.value = null
-    silentAttempted.value = false
+    inNativeApp.value = false
   }
 
-  function syncLoginState(state: CloudbaseLoginState | null): void {
-    const next = normalizeAccount(state?.user ?? cachedAuth?.currentUser)
-    account.value = next
-    status.value = next ? 'signed-in' : 'signed-out'
+  async function adoptAuthorization(
+    authorization: SsoAuthorizationResult,
+    ssoConfig: YunlefunSsoConfig,
+  ): Promise<void> {
+    const persistence = ssoConfig.sessionMode === 'browser' ? 'session' : 'none'
+    const auth = await ensureAuth(
+      normalizeConfigValue(config.public.yunlefunCloudbaseEnv),
+      persistence,
+    )
+    if (!auth)
+      throw new Error('CloudBase auth is unavailable')
+
+    let nextAccount: YunlefunAccount | null
+
+    if (ssoConfig.sessionMode === 'browser') {
+      const adopted = await adoptSsoCode(auth, authorization, ssoConfig.exchange)
+      if (!adopted)
+        throw new Error('SSO authorization is invalid')
+
+      nextAccount = await readCloudbaseAccount(auth)
+    }
+    else {
+      try {
+        const proof = await adoptSsoIdentityProof(auth, authorization, ssoConfig.exchange)
+        nextAccount = await createBffSession(proof, ssoConfig)
+      }
+      finally {
+        await auth.signOut().catch(() => undefined)
+      }
+    }
+
+    if (!nextAccount)
+      throw new Error('SSO identity is unavailable')
+
+    account.value = nextAccount
+    status.value = 'signed-in'
+    lastFailure.value = null
+    lastError.value = null
+  }
+
+  async function restoreSession(ssoConfig: YunlefunSsoConfig): Promise<boolean> {
+    const nextAccount = ssoConfig.sessionMode === 'browser'
+      ? await restoreBrowserSession()
+      : await restoreBffSession(ssoConfig)
+
+    if (!nextAccount)
+      return false
+
+    account.value = nextAccount
+    status.value = 'signed-in'
+    lastFailure.value = null
+    lastError.value = null
+    return true
+  }
+
+  async function restoreBrowserSession(): Promise<YunlefunAccount | null> {
+    const auth = await ensureAuth(
+      normalizeConfigValue(config.public.yunlefunCloudbaseEnv),
+      'session',
+    )
+
+    return auth ? readCloudbaseAccount(auth) : null
+  }
+
+  async function restoreBffSession(ssoConfig: YunlefunSsoConfig): Promise<YunlefunAccount | null> {
+    if (!ssoConfig.sessionEndpoint)
+      return null
+
+    const response = await fetch(ssoConfig.sessionEndpoint, {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store',
+      headers: {
+        accept: 'application/json',
+      },
+    })
+
+    if (response.status === 401 || response.status === 404)
+      return null
+    if (!response.ok)
+      throw new Error('BFF session lookup failed')
+
+    return readBffAccount(await response.json())
+  }
+
+  async function createBffSession(
+    proof: SsoIdentityProof,
+    ssoConfig: YunlefunSsoConfig,
+  ): Promise<YunlefunAccount | null> {
+    if (!ssoConfig.sessionEndpoint)
+      throw new Error('BFF session endpoint is unavailable')
+
+    const response = await fetch(ssoConfig.sessionEndpoint, {
+      method: 'POST',
+      credentials: 'include',
+      cache: 'no-store',
+      headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(proof),
+    })
+
+    if (!response.ok)
+      throw new Error('BFF session creation failed')
+
+    return readBffAccount(await response.json())
+  }
+
+  function resolveConfig(): YunlefunSsoConfigResult {
+    return resolveYunlefunSsoConfig({
+      clientId: config.public.yunlefunSsoClientId,
+      exchangeUrl: config.public.yunlefunSsoExchangeUrl,
+      redirectUri: config.public.yunlefunSsoRedirectUri,
+      scope: config.public.yunlefunSsoScope,
+      sessionEndpoint: config.public.yunlefunSsoSessionEndpoint,
+      sessionMode: config.public.yunlefunSsoSessionMode,
+      ssoOrigin: config.public.yunlefunSsoOrigin,
+    }, window.location.origin)
+  }
+
+  function resolveConfigOrThrow(): YunlefunSsoConfig {
+    const resolved = resolveConfig()
+
+    if (!resolved.ok)
+      throw new Error(resolved.message)
+
+    return resolved.config
+  }
+
+  function applyFailure(reason: SsoFailureReason): void {
+    account.value = null
+    lastFailure.value = reason === 'not_authenticated' ? null : reason
+    lastError.value = null
+    status.value = reason === 'not_authenticated' ? 'signed-out' : 'error'
   }
 
   return {
@@ -188,33 +381,43 @@ export function useYunlefunAuth(): UseYunlefunAuthReturn {
     inNativeApp: readonly(inNativeApp),
     initialize,
     isAuthenticated,
-    refresh,
+    sessionMode,
     signIn,
     signOut,
     status: readonly(status),
-    syncSilently,
   }
 }
 
-async function ensureAuth(env: string): Promise<YunlefunAuthClient | undefined> {
+async function ensureAuth(
+  env: string,
+  persistence: 'none' | 'session',
+): Promise<YunlefunAuthClient | undefined> {
   if (!import.meta.client)
     return undefined
   if (!env)
     throw new Error('Missing NUXT_PUBLIC_YUNLEFUN_CLOUDBASE_ENV.')
-  if (cachedAuth)
-    return cachedAuth
+  if (cachedAuth) {
+    if (cachedPersistence !== persistence)
+      throw new Error('CloudBase auth persistence cannot change at runtime.')
 
-  pendingAuth ??= createAuth(env)
+    return cachedAuth
+  }
+
+  cachedPersistence = persistence
+  pendingAuth ??= createAuth(env, persistence)
   cachedAuth = await pendingAuth
   return cachedAuth
 }
 
-async function createAuth(env: string): Promise<YunlefunAuthClient> {
+async function createAuth(
+  env: string,
+  persistence: 'none' | 'session',
+): Promise<YunlefunAuthClient> {
   const app = await ensureCloudbaseApp(env)
   if (!app)
     throw new Error('CloudBase is unavailable outside the browser.')
 
-  return app.auth({ persistence: 'local' })
+  return app.auth({ persistence })
 }
 
 async function ensureCloudbaseApp(env: string): Promise<YunlefunCloudbaseApp | undefined> {
@@ -239,19 +442,6 @@ async function createCloudbaseApp(env: string): Promise<YunlefunCloudbaseApp> {
   return cloudbase.init({ env })
 }
 
-function attachLoginStateListener(
-  auth: YunlefunAuthClient,
-  syncLoginState: (state: CloudbaseLoginState | null) => void,
-): void {
-  if (loginStateListenerAttached || !auth.onLoginStateChanged)
-    return
-
-  loginStateListenerAttached = true
-  auth.onLoginStateChanged((state) => {
-    syncLoginState(state)
-  })
-}
-
 async function getLoginState(auth: YunlefunAuthClient): Promise<CloudbaseLoginState | null> {
   try {
     return await auth.getLoginState()
@@ -261,19 +451,32 @@ async function getLoginState(auth: YunlefunAuthClient): Promise<CloudbaseLoginSt
   }
 }
 
+async function readCloudbaseAccount(auth: YunlefunAuthClient): Promise<YunlefunAccount | null> {
+  const loginState = await getLoginState(auth)
+  return normalizeAccount(loginState?.user ?? auth.currentUser)
+}
+
+function readBffAccount(payload: unknown): YunlefunAccount | null {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload))
+    return null
+
+  return normalizeAccount((payload as BffSessionResponse).account)
+}
+
 function normalizeAccount(user: CloudbaseUser | null | undefined): YunlefunAccount | null {
-  if (!user?.uid || user.is_anonymous)
+  const uid = firstNonEmpty([user?.uid, user?.id])
+  if (!user || !uid || user.is_anonymous)
     return null
 
   return {
-    uid: user.uid,
+    uid,
     displayName: firstNonEmpty([
       user.displayName,
       user.name,
       user.nickName,
       user.username,
       user.email,
-      user.uid.slice(0, 8),
+      uid.slice(0, 8),
     ])!,
     email: firstNonEmpty([user.email]),
     avatarUrl: firstNonEmpty([user.avatarUrl, user.avatar, user.photoURL]),

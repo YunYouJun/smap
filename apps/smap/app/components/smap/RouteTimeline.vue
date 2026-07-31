@@ -1,20 +1,44 @@
 <script setup lang="ts">
+import type { NavigationStatus } from './navigationSimulation'
+import { navigationStatusLabel } from './navigationSimulation'
 import type { RouteOption, Waypoint } from './types'
 
 interface Props {
-  isNavigating: boolean
+  currentLegIndex: number
+  navigationStatus: NavigationStatus
+  progress: number
   route: RouteOption
   waypoints: Waypoint[]
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+
+function isCompleted(index: number): boolean {
+  if (props.navigationStatus === 'arrived')
+    return true
+
+  if (props.navigationStatus === 'idle')
+    return index === 0
+
+  return index <= props.currentLegIndex
+}
+
+function isCurrent(index: number): boolean {
+  if (props.navigationStatus === 'arrived')
+    return index === props.waypoints.length - 1
+
+  if (props.navigationStatus === 'idle')
+    return index === 0
+
+  return index === Math.min(props.waypoints.length - 1, props.currentLegIndex + 1)
+}
 </script>
 
 <template>
   <footer class="route-timeline" aria-label="航线时间轴">
     <div class="route-timeline__heading">
       <h2>航线时间轴（{{ route.stops }} 个跃迁点）</h2>
-      <span>{{ isNavigating ? '导航中' : '待启动' }}</span>
+      <span>{{ navigationStatusLabel(navigationStatus) }} · {{ progress }}%</span>
     </div>
 
     <div class="route-timeline__track">
@@ -25,7 +49,10 @@ defineProps<Props>()
         :class="{
           'route-timeline__stop--origin': waypoint.role === 'origin',
           'route-timeline__stop--destination': waypoint.role === 'destination',
+          'route-timeline__stop--completed': isCompleted(index),
+          'route-timeline__stop--current': isCurrent(index),
         }"
+        :aria-current="isCurrent(index) ? 'step' : undefined"
       >
         <span class="route-timeline__node">{{ waypoint.role === 'origin' ? '◎' : index }}</span>
         <div>
@@ -92,6 +119,22 @@ defineProps<Props>()
   border-radius: 8px;
   color: #d9edf3;
   background: rgba(9, 28, 36, 0.72);
+}
+
+.route-timeline__stop--completed {
+  border-color: rgba(42, 242, 237, 0.42);
+  background: rgba(22, 77, 82, 0.42);
+}
+
+.route-timeline__stop--current {
+  border-color: rgba(255, 173, 47, 0.82);
+  box-shadow: 0 0 0 1px rgba(255, 173, 47, 0.12), 0 0 20px rgba(255, 173, 47, 0.12);
+}
+
+.route-timeline__stop--current .route-timeline__node {
+  border-color: rgba(255, 173, 47, 0.9);
+  color: #fff3ce;
+  background: rgba(255, 173, 47, 0.18);
 }
 
 .route-timeline__stop:not(:last-child)::after {

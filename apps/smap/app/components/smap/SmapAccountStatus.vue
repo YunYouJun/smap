@@ -18,9 +18,9 @@ const {
   inNativeApp,
   initialize,
   isAuthenticated,
+  sessionMode,
   signIn,
   status,
-  syncSilently,
 } = useYunlefunAuth()
 
 const isLoading = computed(() => status.value === 'checking' || status.value === 'signing-in')
@@ -46,10 +46,16 @@ const accountHint = computed(() => {
   if (errorMessage.value)
     return errorMessage.value
 
-  if (isAuthenticated.value)
-    return inNativeApp.value ? 'YunLeFun App 内已同步' : '已同步 YunLeFun 账号'
+  if (isAuthenticated.value) {
+    if (sessionMode.value === 'browser')
+      return inNativeApp.value ? 'App 内已验证 · 浏览器临时会话' : '已验证 · 浏览器临时会话'
 
-  return '同步收藏、订单与导航偏好'
+    return inNativeApp.value ? 'YunLeFun App 内已同步' : '已建立安全服务器会话'
+  }
+
+  return sessionMode.value === 'browser'
+    ? '安全重定向 · 浏览器临时会话'
+    : '安全重定向 · 服务器长期会话'
 })
 
 const accountClasses = computed(() => ({
@@ -65,7 +71,6 @@ watch(() => account.value?.avatarUrl, () => {
 
 onMounted(async () => {
   await initialize()
-  await syncSilently()
 })
 
 function useFallbackAvatar(event: Event): void {
@@ -77,7 +82,7 @@ function useFallbackAvatar(event: Event): void {
 }
 
 async function login(): Promise<void> {
-  await signIn('interactive')
+  await signIn()
 }
 </script>
 

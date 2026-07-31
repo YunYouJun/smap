@@ -42,20 +42,28 @@ const {
   activeRouteWaypoints,
   activeSearchRole,
   alternativeRoutePoints,
+  currentNavigationLeg,
   destination,
   enabledMapToolIds,
+  endNavigation,
   ephemerisState,
   exploreSpots,
   hazardZones,
-  isNavigating,
   isRideRequested,
+  latestNavigationEvent,
   mapTools,
   mobileServices,
+  navigationEvents,
+  navigationPosition,
+  navigationSpeed,
+  navigationStatus,
+  navigationSummary,
   origin,
   profileActions,
   rideOptions,
   routeOptions,
   routeProgress,
+  remainingDuration,
   routeSearchQuery,
   routeSearchResults,
   clearRouteSearch,
@@ -69,6 +77,7 @@ const {
   selectWaypoint,
   selectedWaypoint,
   selectedWaypointId,
+  setNavigationSpeed,
   submitRouteSearch,
   swapRouteEndpoints,
   telemetryMetrics,
@@ -110,7 +119,7 @@ function handleRouteSearchSubmit(): void {
       :active-service="activeMobileService"
       :active-search-role="activeSearchRole"
       :destination="destination"
-      :is-navigating="isNavigating"
+      :navigation-status="navigationStatus"
       :origin="origin"
       :search-query="routeSearchQuery"
       :search-results="routeSearchResults"
@@ -131,11 +140,12 @@ function handleRouteSearchSubmit(): void {
         :active-route-id="activeRouteId"
         :active-search-role="activeSearchRole"
         :destination="destination"
-        :is-navigating="isNavigating"
+        :navigation-status="navigationStatus"
         :modes="travelModes"
         :origin="origin"
         :routes="routeOptions"
         @focus-route-search="focusRouteSearch"
+        @end-navigation="endNavigation"
         @reset-route-endpoint="resetRouteEndpoint"
         @select-mode="selectMode"
         @select-route="selectRoute"
@@ -172,6 +182,8 @@ function handleRouteSearchSubmit(): void {
         :data-source-updated-at="ephemerisState.updatedAt"
         :enabled-map-tool-ids="enabledMapToolIds"
         :hazards="hazardZones"
+        :navigation-position="navigationPosition"
+        :navigation-status="navigationStatus"
         :selected-waypoint-id="selectedWaypointId"
         :waypoints="waypoints"
         :zoom-level="zoomLevel"
@@ -183,11 +195,18 @@ function handleRouteSearchSubmit(): void {
 
       <TelemetryPanel
         v-if="activeMobileService === 'navigation'"
+        :current-leg="currentNavigationLeg"
+        :events="navigationEvents"
         :hazards="hazardZones"
         :metrics="telemetryMetrics"
+        :navigation-speed="navigationSpeed"
+        :navigation-status="navigationStatus"
         :progress="routeProgress"
+        :remaining-duration="remainingDuration"
         :route="activeRoute"
         :selected-waypoint="selectedWaypoint"
+        :summary="navigationSummary"
+        @set-navigation-speed="setNavigationSpeed"
       />
 
       <DesktopServiceOverview
@@ -211,10 +230,16 @@ function handleRouteSearchSubmit(): void {
       :active-service="activeMobileService"
       :enabled-map-tool-ids="enabledMapToolIds"
       :explore-spots="exploreSpots"
-      :is-navigating="isNavigating"
       :is-ride-requested="isRideRequested"
+      :current-navigation-leg="currentNavigationLeg"
+      :latest-navigation-event="latestNavigationEvent"
       :map-tools="mapTools"
+      :navigation-progress="routeProgress"
+      :navigation-speed="navigationSpeed"
+      :navigation-status="navigationStatus"
+      :navigation-summary="navigationSummary"
       :profile-actions="profileActions"
+      :remaining-duration="remainingDuration"
       :ride-option="activeRideOption"
       :ride-options="rideOptions"
       :destination="destination"
@@ -223,9 +248,11 @@ function handleRouteSearchSubmit(): void {
       :routes="routeOptions"
       :selected-waypoint-id="selectedWaypointId"
       @select-ride-option="selectRideOption"
+      @end-navigation="endNavigation"
       @select-route="selectRoute"
       @select-service="goToService"
       @select-waypoint="selectWaypoint"
+      @set-navigation-speed="setNavigationSpeed"
       @toggle-map-tool="toggleMapTool"
       @toggle-navigation="toggleNavigation"
       @toggle-ride-request="toggleRideRequest"
@@ -237,7 +264,9 @@ function handleRouteSearchSubmit(): void {
 
     <RouteTimeline
       v-if="activeMobileService === 'navigation'"
-      :is-navigating="isNavigating"
+      :current-leg-index="currentNavigationLeg?.index ?? 0"
+      :navigation-status="navigationStatus"
+      :progress="routeProgress"
       :route="activeRoute"
       :waypoints="activeRouteWaypoints"
     />

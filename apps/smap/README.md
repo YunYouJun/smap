@@ -52,12 +52,28 @@ Public runtime variables:
 ```bash
 NUXT_PUBLIC_SMAP_EPHEMERIS_API=
 NUXT_PUBLIC_YUNLEFUN_CLOUDBASE_ENV=yunlefun-8g7ybcxc7345c490
+NUXT_PUBLIC_YUNLEFUN_SSO_CLIENT_ID=smap-web
+NUXT_PUBLIC_YUNLEFUN_SSO_EXCHANGE_URL=https://api.yunle.fun/sso-ticket
 NUXT_PUBLIC_YUNLEFUN_SSO_ORIGIN=https://www.yunle.fun
+NUXT_PUBLIC_YUNLEFUN_SSO_REDIRECT_URI=https://smap.yunle.fun/tabs/profile
+NUXT_PUBLIC_YUNLEFUN_SSO_SCOPE=identity:bootstrap
+NUXT_PUBLIC_YUNLEFUN_SSO_SESSION_MODE=browser
 ```
 
 Leave `NUXT_PUBLIC_SMAP_EPHEMERIS_API` empty for static Pages deployments. The app will use its bundled ephemeris data without issuing a missing `/api` request. Set it to an absolute URL, or `/api/smap/horizons` for a Nuxt server deployment, to enable the live JPL Horizons provider.
 
-The app runs with `ssr: false`, so YunLeFun SSO and CloudBase auth stay browser-side.
+The app uses YunLeFun SSO v3. Interactive login leaves the app through a top-level redirect, then returns with a nonce- and PKCE-bound one-time authorization code. Hidden iframe and popup login are not used.
+
+The registered client must bind `smap-web` to the exact production origin and redirect URI shown above. Local SSO testing also needs an explicitly registered HTTPS origin and redirect URI; the default HTTP development server fails closed instead of contacting the provider.
+
+The app supports two explicit session modes:
+
+| Mode | Adoption API | CloudBase persistence | Use case |
+| --- | --- | --- | --- |
+| `browser` | `adoptSsoCode()` | `session` | Static SPA with a tab-scoped CloudBase session |
+| `bff` | `adoptSsoIdentityProof()` | `none` | Same-origin BFF that exchanges the proof for an opaque server cookie |
+
+`browser` is the default and works with static hosting. It can authorize direct CloudBase access under the app's security rules, but it is not a durable device session and ends with the browser tab session. `bff` additionally requires `NUXT_PUBLIC_YUNLEFUN_SSO_SESSION_ENDPOINT=/api/session`; that endpoint must support `GET` for hydration, `POST` for proof exchange, and `DELETE` for logout.
 
 ## Static Deployment
 

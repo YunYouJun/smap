@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { NavigationPosition, NavigationStatus } from './navigationSimulation'
 import type { SmapEphemerisStatus } from './smapProviders'
 import { starField } from './smapData'
 import type { HazardZone, Waypoint } from './types'
@@ -20,6 +21,8 @@ interface Props {
   dataSourceUpdatedAt: string
   enabledMapToolIds: readonly string[]
   hazards: HazardZone[]
+  navigationPosition?: NavigationPosition
+  navigationStatus: NavigationStatus
   selectedWaypointId: string
   waypoints: Waypoint[]
   zoomLevel: number
@@ -182,6 +185,18 @@ function hazardClass(hazard: HazardZone) {
             class="star-map__route-traffic"
             points="146,405 205,332 326,320"
           />
+        </g>
+
+        <g
+          v-if="navigationPosition && navigationStatus !== 'idle'"
+          class="star-map__vessel"
+          :class="`star-map__vessel--${navigationStatus}`"
+          :transform="`translate(${navigationPosition.x} ${navigationPosition.y})`"
+          aria-label="当前航行位置"
+        >
+          <circle class="star-map__vessel-pulse" r="24" />
+          <circle class="star-map__vessel-ring" r="14" />
+          <path d="M0-12 8 10 0 6-8 10Z" />
         </g>
 
         <g v-if="showFavorites" class="star-map__favorites">
@@ -395,6 +410,65 @@ function hazardClass(hazard: HazardZone) {
   stroke: rgba(48, 229, 230, 0.22);
   stroke-dasharray: 4 8;
   stroke-width: 1.3;
+}
+
+.star-map__vessel {
+  color: #fff;
+  filter: drop-shadow(0 0 8px rgba(43, 244, 239, 0.9));
+  pointer-events: none;
+}
+
+.star-map__vessel-pulse {
+  fill: rgba(43, 244, 239, 0.08);
+  stroke: rgba(43, 244, 239, 0.36);
+  stroke-width: 1.5;
+  transform-origin: center;
+  animation: smap-vessel-pulse 1.8s ease-out infinite;
+}
+
+.star-map__vessel-ring {
+  fill: rgba(5, 24, 31, 0.9);
+  stroke: #2bf4ef;
+  stroke-width: 2;
+}
+
+.star-map__vessel path {
+  fill: currentColor;
+  stroke: #0c5d63;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+.star-map__vessel--paused {
+  color: #ffcf76;
+  filter: drop-shadow(0 0 8px rgba(255, 173, 47, 0.78));
+}
+
+.star-map__vessel--paused .star-map__vessel-pulse {
+  animation-play-state: paused;
+  stroke: rgba(255, 173, 47, 0.52);
+}
+
+.star-map__vessel--arrived {
+  color: #6dffc9;
+}
+
+@keyframes smap-vessel-pulse {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.6);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.25);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .star-map__vessel-pulse {
+    animation: none;
+  }
 }
 
 .star-map__hazard circle {

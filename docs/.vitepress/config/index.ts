@@ -15,6 +15,7 @@ const GUIDES: DefaultTheme.NavItemWithLink[] = [
 
 const DESIGN: DefaultTheme.NavItemWithLink[] = [
   { text: '设计沉淀', link: '/design/' },
+  { text: '产品路线图', link: '/roadmap' },
 ]
 
 const VERSIONS: (DefaultTheme.NavItemWithLink | DefaultTheme.NavItemChildren)[] = [

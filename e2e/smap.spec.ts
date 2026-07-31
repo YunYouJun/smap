@@ -30,9 +30,54 @@ test('desktop navigation loads static data without requesting a missing API', as
   await expect(page.getByRole('region', { name: '星际地图' })).toBeVisible()
   await expect(page.getByText('静态示例', { exact: true })).toBeVisible()
 
+  await page.getByLabel('模拟速度').getByRole('button', { name: '4×', exact: true }).click()
   await page.getByRole('button', { name: '开始导航', exact: true }).click()
   await expect(page.getByText('自动导航中', { exact: true })).toBeVisible()
+  const pauseNavigation = page.getByRole('button', { name: '暂停导航', exact: true })
+  const routeProgress = page.locator('[aria-label^="航线进度 "]')
+
+  await expect(pauseNavigation).toBeVisible()
+  await expect.poll(async () => {
+    const label = await routeProgress.getAttribute('aria-label')
+    return Number(label?.match(/\d+/)?.[0] ?? 0)
+  }).toBeGreaterThan(0)
+
+  await pauseNavigation.click()
+  await expect(page.getByText('导航已暂停', { exact: true })).toBeVisible()
+  const pausedProgress = await routeProgress.getAttribute('aria-label')
+  await page.waitForTimeout(1000)
+  await expect(routeProgress).toHaveAttribute('aria-label', pausedProgress ?? '')
+
+  await page.getByRole('button', { name: '继续导航', exact: true }).click()
+  await expect(page.getByLabel('行程摘要')).toContainText('本次模拟已完成', { timeout: 10_000 })
+  await expect(page.getByRole('heading', { name: '已抵达目的地', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '重新导航', exact: true })).toBeVisible()
+
+  expect(apiRequests).toEqual([])
+  expect(runtimeErrors).toEqual([])
+})
+
+test('mobile navigation completes entirely in the static client', async ({ page }) => {
+  const runtimeErrors = collectRuntimeErrors(page)
+  const apiRequests: string[] = []
+
+  page.on('request', (request) => {
+    if (request.url().includes('/api/smap/'))
+      apiRequests.push(request.url())
+  })
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/tabs/map')
+
+  await expect(page.getByText('演示导航将在本地推进，不会请求定位或远端服务', { exact: true })).toBeVisible()
+  await page.getByLabel('演示速度').getByRole('button', { name: '4×', exact: true }).click()
+  await page.getByRole('button', { name: '开始导航', exact: true }).click()
+
   await expect(page.getByRole('button', { name: '暂停导航', exact: true })).toBeVisible()
+  await expect(page.getByText('导航已启动：正在前往 天狼跃迁点', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '已抵达', exact: true })).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByLabel('驾船路线方案').getByText('6 个航段 · 9 条事件', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: '重新导航', exact: true })).toBeVisible()
 
   expect(apiRequests).toEqual([])
   expect(runtimeErrors).toEqual([])
@@ -127,8 +172,14 @@ test('mobile explore and ride expose the same core actions', async ({ page }) =>
   expect(runtimeErrors).toEqual([])
 })
 
-test('mobile profile keeps silent authentication failures user friendly', async ({ page }) => {
+test('mobile profile uses redirect SSO without a hidden iframe', async ({ page }) => {
   const runtimeErrors = collectRuntimeErrors(page)
+  const ssoRequests: string[] = []
+
+  page.on('request', (request) => {
+    if (request.url().startsWith('https://www.yunle.fun/'))
+      ssoRequests.push(request.url())
+  })
 
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/')
@@ -136,9 +187,17 @@ test('mobile profile keeps silent authentication failures user friendly', async 
 
   await expect(page).toHaveURL(/\/tabs\/profile$/)
   await expect(page.getByRole('heading', { name: '我的', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: '登录 YunLeFun', exact: true })).toBeVisible()
-  await expect(page.getByText('同步收藏、订单与导航偏好', { exact: true })).toBeVisible()
+  const loginButton = page.getByRole('button', { name: '登录 YunLeFun', exact: true })
+  await expect(loginButton).toBeVisible()
+  await expect(page.getByText('安全重定向 · 浏览器临时会话', { exact: true })).toBeVisible()
   await expect(page.getByText('timeout', { exact: true })).toHaveCount(0)
+  await expect(page.locator('iframe')).toHaveCount(0)
+  expect(ssoRequests).toEqual([])
 
+  await loginButton.click()
+  await expect(page.getByText('当前域名尚未登记为登录回跳地址', { exact: true })).toBeVisible()
+  await expect(page).toHaveURL(/\/tabs\/profile$/)
+
+  expect(ssoRequests).toEqual([])
   expect(runtimeErrors).toEqual([])
 })

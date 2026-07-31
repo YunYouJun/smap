@@ -37,8 +37,8 @@ catalogs:
       specifier: ^14.3.0
       version: 14.3.0
     '@yunlefun/sso':
-      specifier: ^0.3.1
-      version: 0.3.1
+      specifier: ^0.6.0
+      version: 0.6.0
     '@yunyoujun/docs':
       specifier: ^0.1.14
       version: 0.1.14
@@ -169,7 +169,7 @@ importers:
         version: 3.6.2
       '@yunlefun/sso':
         specifier: 'catalog:'
-        version: 0.3.1
+        version: 0.6.0
       '@yunyoujun/smap-sdk':
         specifier: workspace:*
         version: link:../../packages/smap-sdk
@@ -2583,8 +2583,8 @@ packages:
     peerDependencies:
       vue: ^3.5.0
 
-  '@yunlefun/sso@0.3.1':
-    resolution: {integrity: sha512-w7Xa2RWTZ66jrH3NqgccW0Q61VhdIiozNUjr0ubERIWTyGid7vThkodcl3tMgcobX5K94bSLqZXdWfgkn91HQQ==}
+  '@yunlefun/sso@0.6.0':
+    resolution: {integrity: sha512-zLr4eb53ti9fhjRCnPlOWVA32L/KxtoLVSeTK39yrv19bvcAvGEwWO4Yr5m2rqpvzyNO+Fc3C06CNQ8srOa9mw==}
 
   '@yunyoujun/docs@0.1.14':
     resolution: {integrity: sha512-SbSRB0QKLVzXDU6kkumAtEcLskPXD4GhWefYhbSokFiyD1sjB2Rogy6bymDvWmzD28T8UwmaekerXVBUBC1lpA==}
@@ -3863,6 +3863,9 @@ packages:
   jiti@2.7.0:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
+
+  jose@6.2.5:
+    resolution: {integrity: sha512-2E5L2yRp03FnwreJLJX8/r7mHiZICCf8kG7fAsTWkSQTDAcc46NIZoQLKy+EJ8sPoJlxyS4OQR5H70LjIZZlIQ==}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -8582,7 +8585,9 @@ snapshots:
     dependencies:
       vue: 3.5.39(typescript@5.9.3)
 
-  '@yunlefun/sso@0.3.1': {}
+  '@yunlefun/sso@0.6.0':
+    dependencies:
+      jose: 6.2.5
 
   '@yunyoujun/docs@0.1.14(vite@8.1.4(@types/node@26.0.1)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.48.0)(tsx@4.23.0)(yaml@2.9.0))':
     dependencies:
@@ -9865,6 +9870,8 @@ snapshots:
   jiti@1.21.7: {}
 
   jiti@2.7.0: {}
+
+  jose@6.2.5: {}
 
   js-tokens@4.0.0: {}
 

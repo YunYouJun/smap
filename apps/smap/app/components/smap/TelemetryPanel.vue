@@ -1,21 +1,67 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import type {
+  NavigationEvent,
+  NavigationLeg,
+  NavigationSpeed,
+  NavigationStatus,
+  NavigationSummary,
+} from './navigationSimulation'
+import { navigationStatusLabel } from './navigationSimulation'
 import type { HazardZone, RouteOption, TelemetryMetric, Waypoint } from './types'
 
 interface Props {
+  currentLeg?: NavigationLeg
+  events: NavigationEvent[]
   hazards: HazardZone[]
   metrics: TelemetryMetric[]
+  navigationSpeed: NavigationSpeed
+  navigationStatus: NavigationStatus
+  remainingDuration: string
   route: RouteOption
   progress: number
   selectedWaypoint: Waypoint
+  summary?: NavigationSummary
 }
 
-defineProps<Props>()
+interface Emits {
+  setNavigationSpeed: [speed: NavigationSpeed]
+}
+
+const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
+const speedOptions: NavigationSpeed[] = [1, 2, 4]
+const recentEvents = computed(() => props.events.slice(-3).reverse())
+
+const routeEtaTitle = computed(() => {
+  if (props.navigationStatus === 'arrived')
+    return '已抵达目的地'
+
+  if (props.navigationStatus === 'idle')
+    return `预计 ${props.route.duration}`
+
+  return `剩余 ${props.remainingDuration}`
+})
+
+const routeDetail = computed(() => {
+  if (props.currentLeg && props.navigationStatus !== 'arrived')
+    return `${props.currentLeg.fromLabel} → ${props.currentLeg.toLabel}`
+
+  if (props.navigationStatus === 'arrived')
+    return `${props.route.label}已完成`
+
+  return `${props.route.stops} 个跃迁点 · 当前锁定 ${props.selectedWaypoint.label}`
+})
 
 function hazardLevelClass(hazard: HazardZone) {
   return [
     'telemetry-panel__level',
     `telemetry-panel__level--${hazard.tone}`,
   ]
+}
+
+function eventClass(event: NavigationEvent): string {
+  return `telemetry-panel__event--${event.kind}`
 }
 </script>
 
@@ -47,18 +93,51 @@ function hazardLevelClass(hazard: HazardZone) {
     </section>
 
     <section class="telemetry-panel__section telemetry-panel__section--summary">
-      <h3 class="telemetry-panel__eta">预计 {{ route.duration }}</h3>
-      <p class="telemetry-panel__copy">{{ route.stops }} 个跃迁点 · 当前锁定 {{ selectedWaypoint.label }}</p>
-      <div class="telemetry-panel__progress" aria-label="航线进度">
+      <div class="telemetry-panel__navigation-head">
+        <div>
+          <span class="telemetry-panel__status">{{ navigationStatusLabel(navigationStatus) }}</span>
+          <h3 class="telemetry-panel__eta">{{ routeEtaTitle }}</h3>
+        </div>
+        <strong>{{ progress }}%</strong>
+      </div>
+      <p class="telemetry-panel__copy">{{ routeDetail }}</p>
+      <div class="telemetry-panel__progress" :aria-label="`航线进度 ${progress}%`">
         <span :style="{ width: `${progress}%` }"></span>
+      </div>
+      <div class="telemetry-panel__speed" aria-label="模拟速度">
+        <span>演示速度</span>
+        <button
+          v-for="speed in speedOptions"
+          :key="speed"
+          type="button"
+          :aria-pressed="navigationSpeed === speed"
+          :class="{ 'telemetry-panel__speed-button--active': navigationSpeed === speed }"
+          @click="emit('setNavigationSpeed', speed)"
+        >
+          {{ speed }}×
+        </button>
       </div>
       <div class="telemetry-panel__chips">
         <span v-for="alert in route.alerts" :key="alert">{{ alert }}</span>
       </div>
-      <button type="button">
-        查看航线详情
-        <span aria-hidden="true">›</span>
-      </button>
+      <div v-if="recentEvents.length > 0" class="telemetry-panel__events" aria-label="最近航行事件">
+        <article
+          v-for="event in recentEvents"
+          :key="event.id"
+          class="telemetry-panel__event"
+          :class="eventClass(event)"
+        >
+          <span>{{ event.progress }}%</span>
+          <div>
+            <strong>{{ event.title }}</strong>
+            <small>{{ event.detail }}</small>
+          </div>
+        </article>
+      </div>
+      <div v-if="summary" class="telemetry-panel__arrival" aria-label="行程摘要">
+        <strong>本次模拟已完成</strong>
+        <span>{{ summary.completedLegs }} 个航段 · {{ summary.completedEvents }} 条事件</span>
+      </div>
     </section>
   </aside>
 </template>
@@ -69,7 +148,8 @@ function hazardLevelClass(hazard: HazardZone) {
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 16px;
   border-left: 1px solid rgba(114, 234, 233, 0.15);
   background: linear-gradient(180deg, rgba(7, 26, 33, 0.93), rgba(6, 18, 24, 0.93));
@@ -238,6 +318,27 @@ function hazardLevelClass(hazard: HazardZone) {
   font-size: 13px;
 }
 
+.telemetry-panel__navigation-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.telemetry-panel__navigation-head > strong {
+  color: #2bf4ef;
+  font-size: 22px;
+  font-weight: 820;
+}
+
+.telemetry-panel__status {
+  display: block;
+  margin-bottom: 4px;
+  color: #89a5af;
+  font-size: 11px;
+  font-weight: 720;
+}
+
 .telemetry-panel__progress {
   height: 7px;
   overflow: hidden;
@@ -269,20 +370,110 @@ function hazardLevelClass(hazard: HazardZone) {
   line-height: 22px;
 }
 
-.telemetry-panel button {
-  display: inline-flex;
+.telemetry-panel__speed {
+  display: grid;
+  grid-template-columns: 1fr repeat(3, 38px);
+  gap: 6px;
+  align-items: center;
+}
+
+.telemetry-panel__speed > span {
+  color: #8fa8b1;
+  font-size: 12px;
+}
+
+.telemetry-panel__speed button {
+  min-height: 28px;
+  border: 1px solid rgba(170, 218, 228, 0.18);
+  border-radius: 6px;
+  color: #9fb7c0;
+  background: rgba(10, 30, 38, 0.72);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.telemetry-panel__speed button.telemetry-panel__speed-button--active {
+  border-color: rgba(43, 244, 239, 0.58);
+  color: #e8ffff;
+  background: rgba(43, 244, 239, 0.16);
+}
+
+.telemetry-panel__events {
+  display: grid;
+  gap: 7px;
+}
+
+.telemetry-panel__event {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
   gap: 8px;
   align-items: center;
-  justify-content: center;
-  min-height: 42px;
-  margin-top: 4px;
-  border: 1px solid rgba(170, 218, 228, 0.18);
-  border-radius: 8px;
-  color: #d9edf3;
-  background: rgba(10, 30, 38, 0.8);
-  font-size: 14px;
-  font-weight: 650;
-  cursor: pointer;
+  padding: 8px;
+  border-left: 2px solid #73929c;
+  border-radius: 5px;
+  background: rgba(9, 29, 37, 0.72);
+}
+
+.telemetry-panel__event > span {
+  color: #8ba5ae;
+  font-size: 11px;
+  font-weight: 760;
+}
+
+.telemetry-panel__event > div {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.telemetry-panel__event strong,
+.telemetry-panel__event small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.telemetry-panel__event strong {
+  color: #dceef4;
+  font-size: 12px;
+}
+
+.telemetry-panel__event small {
+  color: #829ca6;
+  font-size: 10px;
+}
+
+.telemetry-panel__event--risk {
+  border-left-color: #ffad2f;
+}
+
+.telemetry-panel__event--service {
+  border-left-color: #39dca2;
+}
+
+.telemetry-panel__event--arrival {
+  border-left-color: #2bf4ef;
+}
+
+.telemetry-panel__arrival {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border: 1px solid rgba(57, 220, 162, 0.3);
+  border-radius: 7px;
+  color: #dffff3;
+  background: rgba(57, 220, 162, 0.1);
+}
+
+.telemetry-panel__arrival strong {
+  font-size: 13px;
+}
+
+.telemetry-panel__arrival span {
+  color: #91baaa;
+  font-size: 11px;
 }
 
 @media (max-width: 1120px) {

@@ -8,9 +8,9 @@ describe('authentication error messages', () => {
   })
 
   it('maps technical failure reasons to actionable copy', () => {
-    expect(formatSsoFailureMessage('timeout')).toBe('登录服务响应超时，请稍后重试')
-    expect(formatSsoFailureMessage('popup_blocked')).toBe('浏览器阻止了登录窗口，请允许弹窗后重试')
-    expect(formatSsoFailureMessage('not_configured')).toBe('登录服务尚未配置')
+    expect(formatSsoFailureMessage('access_denied')).toBe('登录授权已取消')
+    expect(formatSsoFailureMessage('invalid_request')).toBe('登录请求无效，请刷新后重试')
+    expect(formatSsoFailureMessage('server_error')).toBe('登录服务响应异常，请稍后重试')
   })
 
   it('does not expose unexpected exception details', () => {

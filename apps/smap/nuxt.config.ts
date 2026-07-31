@@ -35,7 +35,13 @@ export default defineNuxtConfig({
     public: {
       smapEphemerisApi: process.env.NUXT_PUBLIC_SMAP_EPHEMERIS_API || '',
       yunlefunCloudbaseEnv: process.env.NUXT_PUBLIC_YUNLEFUN_CLOUDBASE_ENV || 'yunlefun-8g7ybcxc7345c490',
+      yunlefunSsoClientId: process.env.NUXT_PUBLIC_YUNLEFUN_SSO_CLIENT_ID || 'smap-web',
+      yunlefunSsoExchangeUrl: process.env.NUXT_PUBLIC_YUNLEFUN_SSO_EXCHANGE_URL || 'https://api.yunle.fun/sso-ticket',
       yunlefunSsoOrigin: process.env.NUXT_PUBLIC_YUNLEFUN_SSO_ORIGIN || 'https://www.yunle.fun',
+      yunlefunSsoRedirectUri: process.env.NUXT_PUBLIC_YUNLEFUN_SSO_REDIRECT_URI || 'https://smap.yunle.fun/tabs/profile',
+      yunlefunSsoScope: process.env.NUXT_PUBLIC_YUNLEFUN_SSO_SCOPE || 'identity:bootstrap',
+      yunlefunSsoSessionEndpoint: process.env.NUXT_PUBLIC_YUNLEFUN_SSO_SESSION_ENDPOINT || '/api/session',
+      yunlefunSsoSessionMode: process.env.NUXT_PUBLIC_YUNLEFUN_SSO_SESSION_MODE || 'browser',
     },
   },
 
@@ -53,6 +59,7 @@ export default defineNuxtConfig({
       include: [
         '@cloudbase/js-sdk',
         '@yunlefun/sso',
+        '@yunlefun/sso/browser',
       ],
     },
   },
