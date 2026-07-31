@@ -33,7 +33,7 @@ catalog:
   eslint: ^10.7.0
   floating-vue: ^5.2.2
   lint-staged: ^17.0.8
-  nuxt: ^4.4.8
+  nuxt: ^4.5.1
   pinia: ^3.0.4
   simple-git-hooks: ^2.13.1
   tsx: ^4.23.0
