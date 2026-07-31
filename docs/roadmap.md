@@ -150,7 +150,8 @@ M3 的最小验收路径是：示例应用加载一份外部数据集，通过�
 
 - [x] 升级 `@yunlefun/sso` v0.6，使用顶层 redirect + PKCE/nonce，移除隐藏 iframe 和 popup。
 - [x] 分类支持 `browser` 静态临时会话与 `bff` opaque server session，不再混用身份采用流程。
-- [ ] 在 SSO Client Registry 中登记 `smap-web` 的生产 Origin、回跳 URI、scope 和 policy，并完成真实回跳验收。
+- [x] 在 SSO Client Registry 中登记并上线 `smap-web` 的生产 Origin、`identity:bootstrap` scope、policy，以及精确回跳 URI `https://smap.yunle.fun/tabs/profile`。
+- [ ] 使用真实账号完成 `smap-web` 的生产授权与回跳验收。
 - [ ] 若首发包含跨设备账号同步，则部署同源 BFF 与 opaque server session；纯静态首发可使用 `browser` 模式。
 - [ ] 增加以 `https://smap.yunle.fun` 为目标的生产冒烟测试，检查控制台错误、失败请求和核心路由。
 - [ ] 整理首发 Changelog，确定 `v0.1.0` 的实际内容和日期。
