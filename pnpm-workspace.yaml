@@ -22,7 +22,7 @@ catalog:
   '@antfu/eslint-config': ^9.1.0
   '@antfu/ni': ^30.2.0
   '@antfu/utils': ^9.3.0
-  '@cloudbase/js-sdk': ^3.6.2
+  '@cloudbase/js-sdk': ^3.7.1
   '@iconify-json/svg-spinners': ^1.2.4
   '@lucide/vue': ^1.31.0
   '@playwright/test': ^1.61.1
