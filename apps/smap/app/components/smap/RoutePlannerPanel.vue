@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { SmapIconName } from './iconTypes'
 import type { NavigationStatus } from './navigationSimulation'
 import type { RouteEndpointRole, RouteOption, RoutePlace, TravelMode } from './types'
+import SmapIcon from './SmapIcon.vue'
 
 interface Props {
   activeModeId: string
@@ -26,31 +28,29 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const { t, td } = useSmapI18n()
 
 const navigationActionLabel = computed(() => {
   if (props.navigationStatus === 'navigating')
-    return '暂停导航'
+    return t('route.pause')
 
   if (props.navigationStatus === 'paused')
-    return '继续导航'
+    return t('route.resume')
 
   if (props.navigationStatus === 'arrived')
-    return '重新导航'
+    return t('route.restart')
 
-  return '开始导航'
+  return t('route.start')
 })
 
-const navigationActionSymbol = computed(() => {
+const navigationActionIcon = computed<SmapIconName>(() => {
   if (props.navigationStatus === 'navigating')
-    return 'Ⅱ'
-
-  if (props.navigationStatus === 'paused')
-    return '▶'
+    return 'pause'
 
   if (props.navigationStatus === 'arrived')
-    return '↻'
+    return 'route'
 
-  return '▶'
+  return 'play'
 })
 
 const canEndNavigation = computed(() => {
@@ -59,22 +59,15 @@ const canEndNavigation = computed(() => {
 </script>
 
 <template>
-  <aside class="route-panel" aria-label="航线规划">
+  <aside class="route-panel" :aria-label="t('route.planner')">
     <div class="route-panel__heading">
-      <h2 class="route-panel__title">航线规划</h2>
-      <button class="route-panel__tool" type="button" aria-label="筛选航线">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M4 7h10" />
-          <path d="M18 7h2" />
-          <circle cx="16" cy="7" r="2" />
-          <path d="M4 17h2" />
-          <path d="M10 17h10" />
-          <circle cx="8" cy="17" r="2" />
-        </svg>
+      <h2 class="route-panel__title">{{ t('route.planner') }}</h2>
+      <button class="route-panel__tool" type="button" :aria-label="t('route.filter')">
+        <SmapIcon name="filter" :size="20" />
       </button>
     </div>
 
-    <div class="route-panel__inputs" aria-label="出发与到达">
+    <div class="route-panel__inputs" :aria-label="t('route.endpoints')">
       <div
         class="route-panel__input-row"
         :class="{ 'route-panel__input-row--active': activeSearchRole === 'origin' }"
@@ -82,12 +75,12 @@ const canEndNavigation = computed(() => {
         <button class="route-panel__input-main" type="button" @click="emit('focusRouteSearch', 'origin')">
           <span class="route-panel__dot route-panel__dot--origin"></span>
           <span class="route-panel__input-copy">
-            <span class="route-panel__input-text">{{ origin.label }}</span>
-            <small>{{ origin.category }} · {{ origin.description }}</small>
+            <span class="route-panel__input-text">{{ td(origin.label) }}</span>
+            <small>{{ td(origin.category) }} · {{ td(origin.description) }}</small>
           </span>
         </button>
-        <button type="button" aria-label="恢复默认出发地" @click="emit('resetRouteEndpoint', 'origin')">
-          ×
+        <button type="button" :aria-label="t('route.resetOrigin')" @click="emit('resetRouteEndpoint', 'origin')">
+          <SmapIcon name="close" :size="18" />
         </button>
       </div>
       <div class="route-panel__connector"></div>
@@ -98,22 +91,22 @@ const canEndNavigation = computed(() => {
         <button class="route-panel__input-main" type="button" @click="emit('focusRouteSearch', 'destination')">
           <span class="route-panel__dot route-panel__dot--destination"></span>
           <span class="route-panel__input-copy">
-            <span class="route-panel__input-text">{{ destination.label }}</span>
-            <small>{{ destination.category }} · {{ destination.description }}</small>
+            <span class="route-panel__input-text">{{ td(destination.label) }}</span>
+            <small>{{ td(destination.category) }} · {{ td(destination.description) }}</small>
           </span>
         </button>
-        <button type="button" aria-label="恢复默认目的地" @click="emit('resetRouteEndpoint', 'destination')">
-          ×
+        <button type="button" :aria-label="t('route.resetDestination')" @click="emit('resetRouteEndpoint', 'destination')">
+          <SmapIcon name="close" :size="18" />
         </button>
       </div>
       <button class="route-panel__add-stop" type="button" @click="emit('swapRouteEndpoints')">
-        <span aria-hidden="true">⇅</span>
-        交换起终点
+        <SmapIcon name="arrow-up-down" :size="17" />
+        {{ t('search.swap') }}
       </button>
     </div>
 
-    <section class="route-panel__section" aria-label="航行模式">
-      <h3 class="route-panel__section-title">航行模式</h3>
+    <section class="route-panel__section" :aria-label="t('route.modes')">
+      <h3 class="route-panel__section-title">{{ t('route.modes') }}</h3>
       <div class="route-panel__modes">
         <button
           v-for="mode in modes"
@@ -123,15 +116,17 @@ const canEndNavigation = computed(() => {
           type="button"
           @click="emit('selectMode', mode.id)"
         >
-          <span class="route-panel__mode-icon" :data-icon="mode.icon" aria-hidden="true"></span>
-          <span>{{ mode.label }}</span>
-          <small>{{ mode.description }}</small>
+          <span class="route-panel__mode-icon" aria-hidden="true">
+            <SmapIcon :name="mode.icon" :size="22" />
+          </span>
+          <span>{{ td(mode.label) }}</span>
+          <small>{{ td(mode.description) }}</small>
         </button>
       </div>
     </section>
 
-    <section class="route-panel__section route-panel__section--routes" aria-label="推荐航线">
-      <h3 class="route-panel__section-title">推荐航线</h3>
+    <section class="route-panel__section route-panel__section--routes" :aria-label="t('route.recommended')">
+      <h3 class="route-panel__section-title">{{ t('route.recommended') }}</h3>
       <button
         v-for="route in routes"
         :key="route.id"
@@ -143,19 +138,19 @@ const canEndNavigation = computed(() => {
         type="button"
         @click="emit('selectRoute', route.id)"
       >
-        <span class="route-panel__route-label">{{ route.label }}</span>
-        <span class="route-panel__route-mode">{{ route.mode }}</span>
-        <strong>预计 {{ route.duration }}</strong>
-        <span class="route-panel__route-meta">{{ route.stops }} 个跃迁点</span>
+        <span class="route-panel__route-label">{{ td(route.label) }}</span>
+        <span class="route-panel__route-mode">{{ td(route.mode) }}</span>
+        <strong>{{ t('route.estimate', { duration: td(route.duration) }) }}</strong>
+        <span class="route-panel__route-meta">{{ t('route.stops', { count: route.stops }) }}</span>
         <span class="route-panel__route-icons" aria-hidden="true">
-          <span v-for="alert in route.alerts.slice(0, 2)" :key="alert">{{ alert }}</span>
+          <span v-for="alert in route.alerts.slice(0, 2)" :key="alert">{{ td(alert) }}</span>
         </span>
       </button>
     </section>
 
     <div class="route-panel__navigation-actions">
       <button class="route-panel__start" type="button" @click="emit('toggleNavigation')">
-        <span aria-hidden="true">{{ navigationActionSymbol }}</span>
+        <SmapIcon :name="navigationActionIcon" :size="18" />
         {{ navigationActionLabel }}
       </button>
       <button
@@ -164,7 +159,7 @@ const canEndNavigation = computed(() => {
         type="button"
         @click="emit('endNavigation')"
       >
-        结束
+        {{ t('route.end') }}
       </button>
     </div>
   </aside>
@@ -216,15 +211,6 @@ const canEndNavigation = computed(() => {
 .route-panel__tool:hover {
   color: #fff;
   background: rgba(255, 255, 255, 0.07);
-}
-
-.route-panel__tool svg {
-  width: 21px;
-  height: 21px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-width: 1.8;
 }
 
 .route-panel__inputs {
@@ -369,7 +355,7 @@ const canEndNavigation = computed(() => {
   gap: 6px;
   place-items: center;
   min-width: 0;
-  min-height: 68px;
+  min-height: 76px;
   padding: 8px 6px;
   border: 1px solid rgba(171, 220, 229, 0.16);
   border-radius: 8px;
@@ -385,37 +371,23 @@ const canEndNavigation = computed(() => {
 }
 
 .route-panel__mode-icon {
+  display: grid;
   width: 22px;
   height: 22px;
-  border-radius: 6px;
-  background:
-    radial-gradient(circle at 50% 50%, currentColor 0 18%, transparent 19%),
-    conic-gradient(from 20deg, transparent 0 18%, currentColor 19% 28%, transparent 29% 44%, currentColor 45% 55%, transparent 56% 72%, currentColor 73% 82%, transparent 83%);
   opacity: 0.94;
-}
-
-.route-panel__mode-icon[data-icon="shield"] {
-  clip-path: polygon(50% 4%, 88% 20%, 80% 72%, 50% 94%, 20% 72%, 12% 20%);
-  background: currentColor;
-}
-
-.route-panel__mode-icon[data-icon="supply"] {
-  background:
-    linear-gradient(currentColor, currentColor) 50% 16% / 72% 3px no-repeat,
-    linear-gradient(currentColor, currentColor) 50% 50% / 72% 3px no-repeat,
-    linear-gradient(currentColor, currentColor) 50% 84% / 72% 3px no-repeat,
-    radial-gradient(ellipse at 50% 16%, transparent 0 45%, currentColor 47% 57%, transparent 59%),
-    radial-gradient(ellipse at 50% 50%, transparent 0 45%, currentColor 47% 57%, transparent 59%),
-    radial-gradient(ellipse at 50% 84%, transparent 0 45%, currentColor 47% 57%, transparent 59%);
+  place-items: center;
 }
 
 .route-panel__mode span:not(.route-panel__mode-icon) {
+  display: -webkit-box;
   max-width: 100%;
   overflow: hidden;
   font-size: 13px;
   font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.18;
+  text-align: center;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .route-panel__mode small {
@@ -426,11 +398,12 @@ const canEndNavigation = computed(() => {
 .route-panel__route {
   position: relative;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) minmax(0, auto);
   gap: 7px 8px;
   align-items: center;
   min-height: 86px;
   padding: 10px 12px;
+  overflow: hidden;
   border: 1px solid rgba(171, 220, 229, 0.16);
   border-radius: 8px;
   color: #d9ebf0;
@@ -453,12 +426,17 @@ const canEndNavigation = computed(() => {
   display: inline-grid;
   place-items: center;
   min-width: 42px;
+  max-width: 92px;
   min-height: 22px;
+  padding: 0 6px;
+  overflow: hidden;
   border-radius: 5px;
   color: #07151a;
   background: #28f2ed;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 820;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .route-panel__route--medium .route-panel__route-label {
@@ -466,9 +444,13 @@ const canEndNavigation = computed(() => {
 }
 
 .route-panel__route-mode {
+  min-width: 0;
+  overflow: hidden;
   color: #89dce0;
   font-size: 13px;
   font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .route-panel__route strong {
@@ -490,10 +472,14 @@ const canEndNavigation = computed(() => {
   grid-column: 3;
   gap: 5px;
   justify-content: flex-end;
+  min-width: 0;
+  max-width: 136px;
+  overflow: hidden;
 }
 
 .route-panel__route-icons span {
   display: inline-flex;
+  min-width: 0;
   align-items: center;
   min-height: 22px;
   padding: 0 6px;
@@ -501,6 +487,9 @@ const canEndNavigation = computed(() => {
   border-radius: 5px;
   color: #35f3ef;
   font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .route-panel__navigation-actions {

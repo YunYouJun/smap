@@ -1,8 +1,10 @@
+import type { SmapIconName } from './iconTypes'
+
 export interface TravelMode {
   id: string
   label: string
   description: string
-  icon: string
+  icon: SmapIconName
 }
 
 export interface Waypoint {
@@ -102,5 +104,5 @@ export interface TelemetryMetric {
   label: string
   value: string
   level: number
-  icon: string
+  icon: SmapIconName
 }

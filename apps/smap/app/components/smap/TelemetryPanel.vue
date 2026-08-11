@@ -8,6 +8,7 @@ import type {
   NavigationSummary,
 } from './navigationSimulation'
 import { navigationStatusLabel } from './navigationSimulation'
+import SmapIcon from './SmapIcon.vue'
 import type { HazardZone, RouteOption, TelemetryMetric, Waypoint } from './types'
 
 interface Props {
@@ -30,27 +31,28 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const { t, td } = useSmapI18n()
 const speedOptions: NavigationSpeed[] = [1, 2, 4]
 const recentEvents = computed(() => props.events.slice(-3).reverse())
 
 const routeEtaTitle = computed(() => {
   if (props.navigationStatus === 'arrived')
-    return '已抵达目的地'
+    return t('telemetry.arrived')
 
   if (props.navigationStatus === 'idle')
-    return `预计 ${props.route.duration}`
+    return t('telemetry.estimate', { duration: td(props.route.duration) })
 
-  return `剩余 ${props.remainingDuration}`
+  return t('telemetry.remaining', { duration: td(props.remainingDuration) })
 })
 
 const routeDetail = computed(() => {
   if (props.currentLeg && props.navigationStatus !== 'arrived')
-    return `${props.currentLeg.fromLabel} → ${props.currentLeg.toLabel}`
+    return `${td(props.currentLeg.fromLabel)} → ${td(props.currentLeg.toLabel)}`
 
   if (props.navigationStatus === 'arrived')
-    return `${props.route.label}已完成`
+    return t('telemetry.routeCompleted', { route: td(props.route.label) })
 
-  return `${props.route.stops} 个跃迁点 · 当前锁定 ${props.selectedWaypoint.label}`
+  return t('telemetry.locked', { count: props.route.stops, name: td(props.selectedWaypoint.label) })
 })
 
 function hazardLevelClass(hazard: HazardZone) {
@@ -66,13 +68,13 @@ function eventClass(event: NavigationEvent): string {
 </script>
 
 <template>
-  <aside class="telemetry-panel" aria-label="航线遥测">
+  <aside class="telemetry-panel" :aria-label="t('telemetry.label')">
     <section class="telemetry-panel__section">
-      <h2 class="telemetry-panel__title">航行 telemetry</h2>
+      <h2 class="telemetry-panel__title">{{ t('telemetry.title') }}</h2>
       <div class="telemetry-panel__metrics">
         <div v-for="metric in metrics" :key="metric.id" class="telemetry-panel__metric">
-          <span class="telemetry-panel__metric-icon" :data-icon="metric.icon" aria-hidden="true"></span>
-          <span class="telemetry-panel__metric-label">{{ metric.label }}</span>
+          <span class="telemetry-panel__metric-icon" aria-hidden="true"><SmapIcon :name="metric.icon" :size="18" /></span>
+          <span class="telemetry-panel__metric-label">{{ td(metric.label) }}</span>
           <strong>{{ metric.value }}</strong>
           <span class="telemetry-panel__meter">
             <span :style="{ width: `${metric.level}%` }"></span>
@@ -82,12 +84,12 @@ function eventClass(event: NavigationEvent): string {
     </section>
 
     <section class="telemetry-panel__section">
-      <h3 class="telemetry-panel__subtitle">航线风险</h3>
+      <h3 class="telemetry-panel__subtitle">{{ t('telemetry.hazards') }}</h3>
       <div class="telemetry-panel__hazards">
         <div v-for="hazard in hazards" :key="hazard.id" class="telemetry-panel__hazard">
-          <span class="telemetry-panel__hazard-icon" aria-hidden="true">✦</span>
-          <span>{{ hazard.label }}</span>
-          <strong :class="hazardLevelClass(hazard)">{{ hazard.level }}</strong>
+          <span class="telemetry-panel__hazard-icon" aria-hidden="true"><SmapIcon name="triangle-alert" :size="15" /></span>
+          <span>{{ td(hazard.label) }}</span>
+          <strong :class="hazardLevelClass(hazard)">{{ td(hazard.level) }}</strong>
         </div>
       </div>
     </section>
@@ -95,17 +97,17 @@ function eventClass(event: NavigationEvent): string {
     <section class="telemetry-panel__section telemetry-panel__section--summary">
       <div class="telemetry-panel__navigation-head">
         <div>
-          <span class="telemetry-panel__status">{{ navigationStatusLabel(navigationStatus) }}</span>
+          <span class="telemetry-panel__status">{{ td(navigationStatusLabel(navigationStatus)) }}</span>
           <h3 class="telemetry-panel__eta">{{ routeEtaTitle }}</h3>
         </div>
         <strong>{{ progress }}%</strong>
       </div>
       <p class="telemetry-panel__copy">{{ routeDetail }}</p>
-      <div class="telemetry-panel__progress" :aria-label="`航线进度 ${progress}%`">
+      <div class="telemetry-panel__progress" :aria-label="t('telemetry.progress', { progress })">
         <span :style="{ width: `${progress}%` }"></span>
       </div>
-      <div class="telemetry-panel__speed" aria-label="模拟速度">
-        <span>演示速度</span>
+      <div class="telemetry-panel__speed" :aria-label="t('telemetry.speed')">
+        <span>{{ t('telemetry.speed') }}</span>
         <button
           v-for="speed in speedOptions"
           :key="speed"
@@ -118,9 +120,9 @@ function eventClass(event: NavigationEvent): string {
         </button>
       </div>
       <div class="telemetry-panel__chips">
-        <span v-for="alert in route.alerts" :key="alert">{{ alert }}</span>
+        <span v-for="alert in route.alerts" :key="alert">{{ td(alert) }}</span>
       </div>
-      <div v-if="recentEvents.length > 0" class="telemetry-panel__events" aria-label="最近航行事件">
+      <div v-if="recentEvents.length > 0" class="telemetry-panel__events" :aria-label="t('telemetry.recentEvents')">
         <article
           v-for="event in recentEvents"
           :key="event.id"
@@ -129,14 +131,14 @@ function eventClass(event: NavigationEvent): string {
         >
           <span>{{ event.progress }}%</span>
           <div>
-            <strong>{{ event.title }}</strong>
-            <small>{{ event.detail }}</small>
+            <strong>{{ td(event.title) }}</strong>
+            <small>{{ td(event.detail) }}</small>
           </div>
         </article>
       </div>
-      <div v-if="summary" class="telemetry-panel__arrival" aria-label="行程摘要">
-        <strong>本次模拟已完成</strong>
-        <span>{{ summary.completedLegs }} 个航段 · {{ summary.completedEvents }} 条事件</span>
+      <div v-if="summary" class="telemetry-panel__arrival" :aria-label="t('telemetry.tripSummary')">
+        <strong>{{ t('telemetry.summaryCompleted') }}</strong>
+        <span>{{ t('telemetry.summaryCounts', { legs: summary.completedLegs, events: summary.completedEvents }) }}</span>
       </div>
     </section>
   </aside>
@@ -207,35 +209,11 @@ function eventClass(event: NavigationEvent): string {
 }
 
 .telemetry-panel__metric-icon {
+  display: grid;
   width: 20px;
   height: 20px;
   color: #9cb7c1;
-}
-
-.telemetry-panel__metric-icon::before {
-  display: block;
-  width: 20px;
-  height: 20px;
-  border: 2px solid currentColor;
-  border-radius: 5px;
-  content: "";
-}
-
-.telemetry-panel__metric-icon[data-icon="bolt"]::before {
-  border: 0;
-  background: currentColor;
-  clip-path: polygon(48% 0, 88% 0, 62% 42%, 92% 42%, 34% 100%, 46% 56%, 18% 56%);
-}
-
-.telemetry-panel__metric-icon[data-icon="shield"]::before,
-.telemetry-panel__metric-icon[data-icon="ship"]::before {
-  border: 0;
-  background: currentColor;
-  clip-path: polygon(50% 4%, 88% 21%, 78% 73%, 50% 96%, 22% 73%, 12% 21%);
-}
-
-.telemetry-panel__metric-icon[data-icon="speed"]::before {
-  border-radius: 50%;
+  place-items: center;
 }
 
 .telemetry-panel__metric-label {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { SmapIconName } from './iconTypes'
 import type {
   NavigationEvent,
   NavigationLeg,
@@ -17,7 +18,7 @@ import type {
   RouteOption,
   RoutePlace,
 } from './types'
-import { formatRideCtaDetail, formatRideCtaLabel } from './ridePresentation'
+import SmapIcon from './SmapIcon.vue'
 
 interface Props {
   activeRideOptionId: string
@@ -61,36 +62,40 @@ const emit = defineEmits<Emits>()
 const slots = defineSlots<{
   'profile-account'?: () => unknown
 }>()
+const { t, td } = useSmapI18n()
 
 const smapFallbackAvatar = '/smap/avatar-fallback.svg'
 const speedOptions: NavigationSpeed[] = [1, 2, 4]
 
-const rideCtaLabel = computed(() => formatRideCtaLabel(props.rideOption, props.isRideRequested))
-const rideCtaDetail = computed(() => formatRideCtaDetail(
-  props.rideOption,
-  props.isRideRequested,
-  props.origin.label,
+const rideCtaLabel = computed(() => t(
+  props.isRideRequested ? 'ride.responded' : 'ride.call',
+  { vehicle: td(props.rideOption.label) },
+))
+const rideCtaDetail = computed(() => t(
+  props.isRideRequested ? 'ride.enRouteDetail' : 'ride.callDetail',
+  { eta: td(props.rideOption.eta), origin: td(props.origin.label) },
 ))
 
 const navigationNotice = computed(() => {
   if (props.latestNavigationEvent)
-    return `${props.latestNavigationEvent.title}：${props.latestNavigationEvent.detail}`
+    return `${td(props.latestNavigationEvent.title)}：${td(props.latestNavigationEvent.detail)}`
 
-  return '演示导航将在本地推进，不会请求定位或远端服务'
+  return t('mobile.localNotice')
 })
 
 const navigationActionLabel = computed(() => {
   if (props.navigationStatus === 'navigating')
-    return '暂停导航'
+    return t('route.pause')
 
   if (props.navigationStatus === 'paused')
-    return '继续导航'
+    return t('route.resume')
 
   if (props.navigationStatus === 'arrived')
-    return '重新导航'
+    return t('route.restart')
 
-  return '开始导航'
+  return t('route.start')
 })
+const navigationActionIcon = computed<SmapIconName>(() => props.navigationStatus === 'navigating' ? 'pause' : 'play')
 
 const canEndNavigation = computed(() => {
   return props.navigationStatus === 'navigating' || props.navigationStatus === 'paused'
@@ -98,12 +103,12 @@ const canEndNavigation = computed(() => {
 
 const navigationLegLabel = computed(() => {
   if (props.navigationStatus === 'arrived')
-    return '行程已完成'
+    return t('mobile.tripCompleted')
 
   if (props.currentNavigationLeg)
-    return `${props.currentNavigationLeg.fromLabel} → ${props.currentNavigationLeg.toLabel}`
+    return `${td(props.currentNavigationLeg.fromLabel)} → ${td(props.currentNavigationLeg.toLabel)}`
 
-  return `${props.origin.label} → ${props.destination.label}`
+  return `${td(props.origin.label)} → ${td(props.destination.label)}`
 })
 
 function isMapToolEnabled(toolId: string): boolean {
@@ -113,42 +118,43 @@ function isMapToolEnabled(toolId: string): boolean {
 function selectExploreSpot(spot: ExploreSpot): void {
   emit('selectWaypoint', spot.waypointId)
 }
+
+function mapToolIcon(icon: MapTool['icon']): SmapIconName {
+  return icon === 'safety' ? 'shield' : icon
+}
 </script>
 
 <template>
-  <aside class="mobile-sheet" aria-label="移动端星际路线方案">
+  <aside class="mobile-sheet" :aria-label="t('mobile.sheet')">
     <span class="mobile-sheet__handle" aria-hidden="true"></span>
 
     <div
       v-show="activeService === 'navigation'"
       class="mobile-sheet__panel mobile-sheet__panel--navigation"
       role="tabpanel"
-      aria-label="驾船路线方案"
+      :aria-label="t('mobile.navigationPanel')"
     >
       <div class="mobile-sheet__warning">
         <span class="mobile-sheet__warning-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 3 2.8 20h18.4L12 3Z" />
-            <path d="M12 8v5M12 17h.01" />
-          </svg>
+          <SmapIcon name="triangle-alert" :size="20" />
         </span>
         <span>{{ navigationNotice }}</span>
       </div>
 
-      <div class="mobile-sheet__route-preferences" aria-label="路线偏好">
-        <span class="mobile-sheet__preference-label">路线偏好</span>
+      <div class="mobile-sheet__route-preferences" :aria-label="t('mobile.routePreferences')">
+        <span class="mobile-sheet__preference-label">{{ t('mobile.routePreferences') }}</span>
         <button class="mobile-sheet__preference mobile-sheet__preference--active" type="button">
-          智能推荐
+          {{ t('mobile.smartRecommendation') }}
         </button>
         <button class="mobile-sheet__preference" type="button">
-          少拥堵
+          {{ t('mobile.lowCongestion') }}
         </button>
         <button class="mobile-sheet__preference" type="button">
-          少跃迁
+          {{ t('mobile.fewerJumps') }}
         </button>
       </div>
 
-      <div class="mobile-sheet__route-cards" aria-label="路线方案">
+      <div class="mobile-sheet__route-cards" :aria-label="t('mobile.routeOptions')">
         <button
           v-for="candidate in routes"
           :key="candidate.id"
@@ -157,9 +163,9 @@ function selectExploreSpot(spot: ExploreSpot): void {
           type="button"
           @click="emit('selectRoute', candidate.id)"
         >
-          <span class="mobile-sheet__route-label">{{ candidate.label }}</span>
-          <strong class="mobile-sheet__route-duration">{{ candidate.duration }}</strong>
-          <span class="mobile-sheet__route-meta">{{ candidate.stops }} 个跃迁点</span>
+          <span class="mobile-sheet__route-label">{{ td(candidate.label) }}</span>
+          <strong class="mobile-sheet__route-duration">{{ td(candidate.duration) }}</strong>
+          <span class="mobile-sheet__route-meta">{{ t('route.stops', { count: candidate.stops }) }}</span>
         </button>
 
         <button
@@ -167,37 +173,36 @@ function selectExploreSpot(spot: ExploreSpot): void {
           type="button"
           @click="emit('selectService', 'ride-hailing')"
         >
-          <span class="mobile-sheet__route-label">打车</span>
+          <span class="mobile-sheet__route-label">{{ t('nav.rideHailing') }}</span>
           <strong class="mobile-sheet__route-duration mobile-sheet__route-duration--price">
-            {{ rideOption.price }}
+            {{ td(rideOption.price) }}
           </strong>
-          <span class="mobile-sheet__route-meta">{{ rideOption.eta }}</span>
+          <span class="mobile-sheet__route-meta">{{ td(rideOption.eta) }}</span>
         </button>
       </div>
 
       <div class="mobile-sheet__summary">
         <div class="mobile-sheet__summary-copy">
-          <span class="mobile-sheet__eyebrow">{{ navigationStatusLabel(navigationStatus) }}</span>
+          <span class="mobile-sheet__eyebrow">{{ td(navigationStatusLabel(navigationStatus)) }}</span>
           <h2 class="mobile-sheet__summary-title">
             <template v-if="navigationStatus === 'arrived'">
-              已抵达
+              {{ t('mobile.arrived') }}
             </template>
             <template v-else>
-              {{ navigationStatus === 'idle' ? '预计' : '剩余' }}
+              {{ navigationStatus === 'idle' ? t('mobile.estimate') : t('mobile.remaining') }}
               <strong class="mobile-sheet__summary-value">
-                {{ (navigationStatus === 'idle' ? route.duration : remainingDuration).replace(' 光时', '') }}
+                {{ td(navigationStatus === 'idle' ? route.duration : remainingDuration) }}
               </strong>
-              光时
             </template>
           </h2>
           <p class="mobile-sheet__summary-meta">
-            {{ navigationLegLabel }} · {{ route.mode }}
+            {{ navigationLegLabel }} · {{ td(route.mode) }}
           </p>
-          <div class="mobile-sheet__navigation-progress" :aria-label="`导航进度 ${navigationProgress}%`">
+          <div class="mobile-sheet__navigation-progress" :aria-label="t('mobile.progress', { progress: navigationProgress })">
             <span :style="{ width: `${navigationProgress}%` }"></span>
           </div>
-          <div class="mobile-sheet__simulation-speed" aria-label="演示速度">
-            <span>速度</span>
+          <div class="mobile-sheet__simulation-speed" :aria-label="t('mobile.demoSpeed')">
+            <span>{{ t('mobile.speed') }}</span>
             <button
               v-for="speed in speedOptions"
               :key="speed"
@@ -211,7 +216,7 @@ function selectExploreSpot(spot: ExploreSpot): void {
             <strong>{{ navigationProgress }}%</strong>
           </div>
           <p v-if="navigationSummary" class="mobile-sheet__arrival-summary">
-            {{ navigationSummary.completedLegs }} 个航段 · {{ navigationSummary.completedEvents }} 条事件
+            {{ t('telemetry.summaryCounts', { legs: navigationSummary.completedLegs, events: navigationSummary.completedEvents }) }}
           </p>
         </div>
       </div>
@@ -219,12 +224,7 @@ function selectExploreSpot(spot: ExploreSpot): void {
       <div class="mobile-sheet__navigation-actions">
         <button class="mobile-sheet__start" type="button" @click="emit('toggleNavigation')">
           <span class="mobile-sheet__start-icon" aria-hidden="true">
-            <svg v-if="navigationStatus === 'navigating'" viewBox="0 0 24 24">
-              <path d="M8 5v14M16 5v14" />
-            </svg>
-            <svg v-else viewBox="0 0 24 24">
-              <path d="m8 5 11 7-11 7V5Z" />
-            </svg>
+            <SmapIcon :name="navigationActionIcon" :size="20" />
           </span>
           {{ navigationActionLabel }}
         </button>
@@ -234,7 +234,7 @@ function selectExploreSpot(spot: ExploreSpot): void {
           type="button"
           @click="emit('endNavigation')"
         >
-          结束
+          {{ t('route.end') }}
         </button>
       </div>
     </div>
@@ -243,36 +243,36 @@ function selectExploreSpot(spot: ExploreSpot): void {
       v-show="activeService === 'ride-hailing'"
       class="mobile-sheet__panel mobile-sheet__panel--ride"
       role="tabpanel"
-      aria-label="星际打车"
+      :aria-label="t('ride.title')"
     >
       <div class="mobile-sheet__ride-head">
         <div class="mobile-sheet__ride-copy">
-          <h2 class="mobile-sheet__ride-title">星际打车</h2>
-          <p class="mobile-sheet__ride-meta">附近 3 艘快船可响应 · 已避开辐射带</p>
+          <h2 class="mobile-sheet__ride-title">{{ t('ride.title') }}</h2>
+          <p class="mobile-sheet__ride-meta">{{ t('mobile.rideMeta') }}</p>
         </div>
         <button class="mobile-sheet__back-to-route" type="button" @click="emit('selectService', 'navigation')">
-          看路线
+          {{ t('mobile.viewRoute') }}
         </button>
       </div>
 
-      <div class="mobile-sheet__addresses" aria-label="打车路线">
+      <div class="mobile-sheet__addresses" :aria-label="t('ride.route')">
         <div class="mobile-sheet__address mobile-sheet__address--origin">
           <span class="mobile-sheet__address-dot" aria-hidden="true"></span>
           <div class="mobile-sheet__address-copy">
-            <strong class="mobile-sheet__address-title">{{ origin.label }}</strong>
-            <span class="mobile-sheet__address-meta">{{ origin.category }} · {{ origin.description }}</span>
+            <strong class="mobile-sheet__address-title">{{ td(origin.label) }}</strong>
+            <span class="mobile-sheet__address-meta">{{ td(origin.category) }} · {{ td(origin.description) }}</span>
           </div>
         </div>
         <div class="mobile-sheet__address mobile-sheet__address--destination">
           <span class="mobile-sheet__address-dot" aria-hidden="true"></span>
           <div class="mobile-sheet__address-copy">
-            <strong class="mobile-sheet__address-title">{{ destination.label }}</strong>
-            <span class="mobile-sheet__address-meta">{{ destination.category }} · {{ destination.description }}</span>
+            <strong class="mobile-sheet__address-title">{{ td(destination.label) }}</strong>
+            <span class="mobile-sheet__address-meta">{{ td(destination.category) }} · {{ td(destination.description) }}</span>
           </div>
         </div>
       </div>
 
-      <div class="mobile-sheet__ride-options" aria-label="打车车型">
+      <div class="mobile-sheet__ride-options" :aria-label="t('mobile.rideTypes')">
         <button
           v-for="option in rideOptions"
           :key="option.id"
@@ -288,31 +288,26 @@ function selectExploreSpot(spot: ExploreSpot): void {
           ></span>
           <span class="mobile-sheet__ride-detail">
             <span class="mobile-sheet__ride-name">
-              {{ option.label }}
-              <small v-if="option.badge" class="mobile-sheet__badge">{{ option.badge }}</small>
+              {{ td(option.label) }}
+              <small v-if="option.badge" class="mobile-sheet__badge">{{ td(option.badge) }}</small>
             </span>
-            <span class="mobile-sheet__ride-eta">{{ option.eta }} · {{ option.duration }}</span>
+            <span class="mobile-sheet__ride-eta">{{ td(option.eta) }} · {{ td(option.duration) }}</span>
           </span>
           <span class="mobile-sheet__price">
             <strong class="mobile-sheet__price-value">{{ option.price.replace(' 星币', '') }}</strong>
-            <span class="mobile-sheet__price-unit">星币</span>
+            <span class="mobile-sheet__price-unit">{{ t('ride.credits') }}</span>
           </span>
           <span class="mobile-sheet__select" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="m6 12 4 4 8-8" />
-            </svg>
+            <SmapIcon name="check" :size="18" :stroke-width="2.3" />
           </span>
         </button>
       </div>
 
       <p class="mobile-sheet__fee-note">
         <span class="mobile-sheet__fee-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <path d="M12 3 5 6v5c0 4.6 2.9 8.6 7 10 4.1-1.4 7-5.4 7-10V6l-7-3Z" />
-            <path d="m8.5 12 2.2 2.2 4.8-5" />
-          </svg>
+          <SmapIcon name="shield" :size="19" />
         </span>
-        价格包含保险及基础服务费
+        {{ t('mobile.feeNote') }}
       </p>
 
       <button
@@ -330,19 +325,19 @@ function selectExploreSpot(spot: ExploreSpot): void {
       v-show="activeService === 'explore'"
       class="mobile-sheet__panel mobile-sheet__panel--explore"
       role="tabpanel"
-      aria-label="星图探索"
+      :aria-label="t('mobile.explorePanel')"
     >
       <div class="mobile-sheet__section-head">
         <div>
-          <h2 class="mobile-sheet__section-title">附近探索</h2>
-          <p class="mobile-sheet__section-meta">补给、维修、休息港与风险提示</p>
+          <h2 class="mobile-sheet__section-title">{{ t('explore.title') }}</h2>
+          <p class="mobile-sheet__section-meta">{{ t('mobile.exploreMeta') }}</p>
         </div>
         <button class="mobile-sheet__small-action" type="button" @click="emit('selectService', 'navigation')">
-          回路线
+          {{ t('mobile.backToRoute') }}
         </button>
       </div>
 
-      <div class="mobile-sheet__tool-grid" aria-label="地图工具">
+      <div class="mobile-sheet__tool-grid" :aria-label="t('explore.tools')">
         <button
           v-for="tool in mapTools"
           :key="tool.id"
@@ -353,30 +348,16 @@ function selectExploreSpot(spot: ExploreSpot): void {
           @click="emit('toggleMapTool', tool.id)"
         >
           <span class="mobile-sheet__tool-icon" :class="`mobile-sheet__tool-icon--${tool.icon}`" aria-hidden="true">
-            <svg v-if="tool.icon === 'traffic'" viewBox="0 0 24 24">
-              <path d="M7 3h10l1.5 5v12h-13V8L7 3Z" />
-              <path d="M8 12h8M9 16h.01M15 16h.01" />
-            </svg>
-            <svg v-else-if="tool.icon === 'layers'" viewBox="0 0 24 24">
-              <path d="m12 3 8 4-8 4-8-4 8-4Z" />
-              <path d="m4 12 8 4 8-4M4 17l8 4 8-4" />
-            </svg>
-            <svg v-else-if="tool.icon === 'favorite'" viewBox="0 0 24 24">
-              <path d="m12 4 2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8L12 4Z" />
-            </svg>
-            <svg v-else viewBox="0 0 24 24">
-              <path d="M12 3 5 6v5c0 4.6 2.9 8.6 7 10 4.1-1.4 7-5.4 7-10V6l-7-3Z" />
-              <path d="m8.5 12 2.2 2.2 4.8-5" />
-            </svg>
+            <SmapIcon :name="mapToolIcon(tool.icon)" :size="20" />
           </span>
           <span class="mobile-sheet__tool-copy">
-            <strong>{{ tool.label }}</strong>
-            <small>{{ tool.description }}</small>
+            <strong>{{ td(tool.label) }}</strong>
+            <small>{{ td(tool.description) }}</small>
           </span>
         </button>
       </div>
 
-      <div class="mobile-sheet__spot-list" aria-label="附近地点">
+      <div class="mobile-sheet__spot-list" :aria-label="t('explore.nearby')">
         <button
           v-for="spot in exploreSpots"
           :key="spot.id"
@@ -391,10 +372,10 @@ function selectExploreSpot(spot: ExploreSpot): void {
         >
           <span class="mobile-sheet__spot-pin" aria-hidden="true"></span>
           <span class="mobile-sheet__spot-copy">
-            <strong>{{ spot.title }}</strong>
-            <span>{{ spot.category }} · {{ spot.distance }} · {{ spot.eta }}</span>
+            <strong>{{ td(spot.title) }}</strong>
+            <span>{{ td(spot.category) }} · {{ td(spot.distance) }} · {{ td(spot.eta) }}</span>
           </span>
-          <span class="mobile-sheet__spot-popularity">{{ spot.popularity }}</span>
+          <span class="mobile-sheet__spot-popularity">{{ td(spot.popularity) }}</span>
         </button>
       </div>
     </div>
@@ -403,13 +384,13 @@ function selectExploreSpot(spot: ExploreSpot): void {
       v-show="activeService === 'profile'"
       class="mobile-sheet__panel mobile-sheet__panel--profile"
       role="tabpanel"
-      aria-label="我的服务"
+      :aria-label="t('mobile.profilePanel')"
     >
       <div class="mobile-sheet__profile-card">
         <img class="mobile-sheet__profile-avatar" :src="smapFallbackAvatar" alt="" aria-hidden="true">
         <div class="mobile-sheet__profile-copy">
-          <h2 class="mobile-sheet__section-title">SMAP 账号</h2>
-          <p class="mobile-sheet__section-meta">登录 YunLeFun 后同步收藏、订单与导航偏好</p>
+          <h2 class="mobile-sheet__section-title">{{ t('mobile.profileTitle') }}</h2>
+          <p class="mobile-sheet__section-meta">{{ t('mobile.profileMeta') }}</p>
         </div>
         <div
           v-if="activeService === 'profile' && slots['profile-account']"
@@ -419,22 +400,22 @@ function selectExploreSpot(spot: ExploreSpot): void {
         </div>
       </div>
 
-      <div class="mobile-sheet__profile-stats" aria-label="账号概览">
+      <div class="mobile-sheet__profile-stats" :aria-label="t('mobile.accountOverview')">
         <span class="mobile-sheet__profile-stat">
           <strong>12</strong>
-          <small>收藏</small>
+          <small>{{ t('mobile.favorites') }}</small>
         </span>
         <span class="mobile-sheet__profile-stat">
           <strong>3</strong>
-          <small>订单</small>
+          <small>{{ t('common.orders') }}</small>
         </span>
         <span class="mobile-sheet__profile-stat">
           <strong>5</strong>
-          <small>偏好</small>
+          <small>{{ t('mobile.preferences') }}</small>
         </span>
       </div>
 
-      <div class="mobile-sheet__profile-actions" aria-label="个人服务">
+      <div class="mobile-sheet__profile-actions" :aria-label="t('mobile.profileServices')">
         <button
           v-for="action in profileActions"
           :key="action.id"
@@ -442,28 +423,14 @@ function selectExploreSpot(spot: ExploreSpot): void {
           type="button"
         >
           <span class="mobile-sheet__profile-icon" :class="`mobile-sheet__profile-icon--${action.icon}`" aria-hidden="true">
-            <svg v-if="action.icon === 'login'" viewBox="0 0 24 24">
-              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-              <path d="m10 17 5-5-5-5M15 12H3" />
-            </svg>
-            <svg v-else-if="action.icon === 'favorite'" viewBox="0 0 24 24">
-              <path d="m12 4 2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8L12 4Z" />
-            </svg>
-            <svg v-else-if="action.icon === 'orders'" viewBox="0 0 24 24">
-              <path d="M7 3h10l3 4v14H4V7l3-4Z" />
-              <path d="M8 12h8M8 16h6" />
-            </svg>
-            <svg v-else viewBox="0 0 24 24">
-              <path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z" />
-              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2 3.4-.2-.1a1.7 1.7 0 0 0-2 .2 1.7 1.7 0 0 0-.7 1.8V22h-4v-.3a1.7 1.7 0 0 0-.7-1.8 1.7 1.7 0 0 0-2-.2l-.2.1-2-3.4.1-.1A1.7 1.7 0 0 0 4.6 15 1.7 1.7 0 0 0 3 14h-.3v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 2-3.4.2.1a1.7 1.7 0 0 0 2-.2A1.7 1.7 0 0 0 9.1 2V2h4v.3a1.7 1.7 0 0 0 .7 1.8 1.7 1.7 0 0 0 2 .2l.2-.1 2 3.4-.1.1a1.7 1.7 0 0 0-.3 1.9A1.7 1.7 0 0 0 21 10h.3v4H21a1.7 1.7 0 0 0-1.6 1Z" />
-            </svg>
+            <SmapIcon :name="action.icon" :size="20" />
           </span>
           <span class="mobile-sheet__profile-action-copy">
             <strong>
-              {{ action.label }}
-              <small v-if="action.badge">{{ action.badge }}</small>
+              {{ td(action.label) }}
+              <small v-if="action.badge">{{ td(action.badge) }}</small>
             </strong>
-            <span>{{ action.description }}</span>
+            <span>{{ td(action.description) }}</span>
           </span>
         </button>
       </div>

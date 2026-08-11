@@ -26,7 +26,7 @@ export default defineNuxtConfig({
         { name: 'viewport', content: 'width=device-width, initial-scale=1.0, viewport-fit=cover' },
       ],
       link: [
-        { rel: 'icon', href: '/favicon.svg', type: 'image/svg+xml' },
+        { rel: 'icon', href: '/smap-app-icon.svg', type: 'image/svg+xml' },
       ],
     },
   },
@@ -58,8 +58,10 @@ export default defineNuxtConfig({
     optimizeDeps: {
       include: [
         '@cloudbase/js-sdk',
+        '@lucide/vue',
         '@yunlefun/sso',
         '@yunlefun/sso/browser',
+        'reka-ui',
       ],
     },
   },

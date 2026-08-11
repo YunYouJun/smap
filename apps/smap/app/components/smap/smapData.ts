@@ -167,7 +167,7 @@ const routeViewMeta: Record<string, { label: string, mode: string, stops: number
   },
 }
 
-const travelModeViewMeta: Record<string, { label: string, description: string, icon: string }> = {
+const travelModeViewMeta: Record<string, { label: string, description: string, icon: TravelMode['icon'] }> = {
   'wormhole': {
     label: '虫洞优先',
     description: '最少跳迁',
@@ -496,16 +496,16 @@ export const mobileServices: MobileServiceItem[] = [
     icon: 'navigate',
   },
   {
-    id: 'ride-hailing',
-    label: '打车',
-    description: '快船接驳',
-    icon: 'taxi',
-  },
-  {
     id: 'explore',
     label: '探索',
     description: '周边发现',
     icon: 'compass',
+  },
+  {
+    id: 'ride-hailing',
+    label: '打车',
+    description: '快船接驳',
+    icon: 'taxi',
   },
   {
     id: 'profile',

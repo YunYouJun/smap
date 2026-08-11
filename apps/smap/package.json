@@ -12,8 +12,10 @@
   },
   "dependencies": {
     "@cloudbase/js-sdk": "catalog:",
+    "@lucide/vue": "catalog:",
     "@yunlefun/sso": "catalog:",
-    "@yunyoujun/smap-sdk": "workspace:*"
+    "@yunyoujun/smap-sdk": "workspace:*",
+    "reka-ui": "catalog:"
   },
   "devDependencies": {
     "nuxt": "catalog:",

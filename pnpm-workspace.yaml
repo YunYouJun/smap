@@ -8,6 +8,7 @@ allowBuilds:
   core-js-pure: true
   esbuild: true
   simple-git-hooks: true
+  vue-demi: true
 
 packages:
   - apps/*
@@ -23,6 +24,7 @@ catalog:
   '@antfu/utils': ^9.3.0
   '@cloudbase/js-sdk': ^3.6.2
   '@iconify-json/svg-spinners': ^1.2.4
+  '@lucide/vue': ^1.31.0
   '@playwright/test': ^1.61.1
   '@shikijs/vitepress-twoslash': ^4.3.1
   '@types/node': ^24.13.3
@@ -35,6 +37,7 @@ catalog:
   lint-staged: ^17.0.8
   nuxt: ^4.4.8
   pinia: ^3.0.4
+  reka-ui: ^2.10.3
   simple-git-hooks: ^2.13.1
   tsx: ^4.23.0
   typedoc: ^0.28.20
