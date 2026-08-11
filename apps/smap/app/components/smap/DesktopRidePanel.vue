@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import type { SmapIconName } from './iconTypes'
 import type { RideOption, RoutePlace } from './types'
+import SmapIcon from './SmapIcon.vue'
 
 interface Props {
   activeRideOptionId: string
@@ -14,53 +16,54 @@ interface Emits {
 
 defineProps<Props>()
 const emit = defineEmits<Emits>()
+const { t, td } = useSmapI18n()
 
-function vehicleSymbol(vehicle: RideOption['vehicle']): string {
+function vehicleIcon(vehicle: RideOption['vehicle']): SmapIconName {
   if (vehicle === 'warp')
-    return '✦'
+    return 'orbit'
 
   if (vehicle === 'shared')
-    return '⌁'
+    return 'car'
 
-  return '◈'
+  return 'ship'
 }
 </script>
 
 <template>
-  <aside class="desktop-ride-panel" aria-label="星际打车">
+  <aside class="desktop-ride-panel" :aria-label="t('ride.title')">
     <header class="desktop-ride-panel__header">
       <div>
         <span class="desktop-ride-panel__eyebrow">RIDE HAILING</span>
-        <h2>星际打车</h2>
+        <h2>{{ t('ride.title') }}</h2>
       </div>
-      <span class="desktop-ride-panel__availability"><i></i> 3 艘可响应</span>
+      <span class="desktop-ride-panel__availability"><i></i> {{ t('ride.available', { count: 3 }) }}</span>
     </header>
 
-    <p class="desktop-ride-panel__intro">已匹配附近快船，并自动避开辐射带与拥堵跃迁口。</p>
+    <p class="desktop-ride-panel__intro">{{ t('ride.intro') }}</p>
 
-    <section class="desktop-ride-panel__route" aria-label="打车路线">
+    <section class="desktop-ride-panel__route" :aria-label="t('ride.route')">
       <div class="desktop-ride-panel__route-line desktop-ride-panel__route-line--origin">
         <i aria-hidden="true"></i>
         <span>
-          <small>上船点</small>
-          <strong>{{ origin.label }}</strong>
-          <em>{{ origin.category }} · {{ origin.description }}</em>
+          <small>{{ t('ride.pickup') }}</small>
+          <strong>{{ td(origin.label) }}</strong>
+          <em>{{ td(origin.category) }} · {{ td(origin.description) }}</em>
         </span>
       </div>
       <div class="desktop-ride-panel__route-line desktop-ride-panel__route-line--destination">
         <i aria-hidden="true"></i>
         <span>
-          <small>目的地</small>
-          <strong>{{ destination.label }}</strong>
-          <em>{{ destination.category }} · {{ destination.description }}</em>
+          <small>{{ t('ride.destination') }}</small>
+          <strong>{{ td(destination.label) }}</strong>
+          <em>{{ td(destination.category) }} · {{ td(destination.description) }}</em>
         </span>
       </div>
     </section>
 
     <section class="desktop-ride-panel__options" aria-labelledby="desktop-ride-options-title">
       <div class="desktop-ride-panel__section-head">
-        <h3 id="desktop-ride-options-title">选择快船</h3>
-        <span>预估价格</span>
+        <h3 id="desktop-ride-options-title">{{ t('ride.select') }}</h3>
+        <span>{{ t('ride.estimatedPrice') }}</span>
       </div>
 
       <button
@@ -73,24 +76,24 @@ function vehicleSymbol(vehicle: RideOption['vehicle']): string {
         @click="emit('selectRideOption', option.id)"
       >
         <span class="desktop-ride-panel__vehicle" :data-vehicle="option.vehicle" aria-hidden="true">
-          {{ vehicleSymbol(option.vehicle) }}
+          <SmapIcon :name="vehicleIcon(option.vehicle)" :size="22" />
         </span>
         <span class="desktop-ride-panel__option-copy">
           <span class="desktop-ride-panel__option-name">
-            <strong>{{ option.label }}</strong>
-            <small v-if="option.badge">{{ option.badge }}</small>
+            <strong>{{ td(option.label) }}</strong>
+            <small v-if="option.badge">{{ td(option.badge) }}</small>
           </span>
-          <span>{{ option.description }}</span>
-          <em>{{ option.eta }} · {{ option.duration }}</em>
+          <span>{{ td(option.description) }}</span>
+          <em>{{ td(option.eta) }} · {{ td(option.duration) }}</em>
         </span>
-        <span class="desktop-ride-panel__price">{{ option.price }}</span>
-        <i class="desktop-ride-panel__check" aria-hidden="true">✓</i>
+        <span class="desktop-ride-panel__price">{{ td(option.price) }}</span>
+        <i class="desktop-ride-panel__check" aria-hidden="true"><SmapIcon name="check" :size="15" :stroke-width="2.5" /></i>
       </button>
     </section>
 
     <p class="desktop-ride-panel__fee-note">
-      <span aria-hidden="true">◇</span>
-      价格包含保险及基础服务费，响应前可免费取消
+      <span aria-hidden="true"><SmapIcon name="shield" :size="16" /></span>
+      {{ t('ride.feeNote') }}
     </p>
   </aside>
 </template>

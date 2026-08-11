@@ -1,8 +1,19 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, shallowRef } from 'vue'
+import {
+  DropdownMenuContent,
+  DropdownMenuItemIndicator,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuRoot,
+  DropdownMenuTrigger,
+} from 'reka-ui'
+import type { MessageKey } from '~/i18n/messages'
 import type { NavigationPosition, NavigationStatus } from './navigationSimulation'
 import type { SmapEphemerisStatus } from './smapProviders'
 import { starField } from './smapData'
+import SmapIcon from './SmapIcon.vue'
 import type { HazardZone, Waypoint } from './types'
 
 interface AlternativeRoute {
@@ -37,6 +48,20 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const { locale, t, td } = useSmapI18n()
+
+type MapView = 'region' | 'orbit' | 'signal'
+
+const selectedMapView = shallowRef<MapView>('region')
+const mapViewOptions: ReadonlyArray<{ value: MapView, labelKey: MessageKey }> = [
+  { value: 'region', labelKey: 'map.view.region' },
+  { value: 'orbit', labelKey: 'map.view.orbit' },
+  { value: 'signal', labelKey: 'map.view.signal' },
+]
+const selectedMapViewLabel = computed(() => {
+  const labelKey = mapViewOptions.find(item => item.value === selectedMapView.value)?.labelKey ?? 'map.view.region'
+  return t(labelKey)
+})
 
 const mapScaleStyle = computed(() => ({
   transform: `scale(${props.zoomLevel})`,
@@ -45,11 +70,11 @@ const mapScaleStyle = computed(() => ({
 const dataSourceTime = computed(() => formatDataSourceTime(props.dataSourceUpdatedAt))
 const dataSourceTitle = computed(() => {
   const time = dataSourceTime.value
-  const bodyCount = `${props.dataSourceBodyCount} 体`
+  const bodyCount = t('map.bodyCount', { count: props.dataSourceBodyCount })
 
   return time
-    ? `${props.dataSourceLabel} · ${time} · ${bodyCount}`
-    : `${props.dataSourceLabel} · ${bodyCount}`
+    ? `${td(props.dataSourceLabel)} · ${time} · ${bodyCount}`
+    : `${td(props.dataSourceLabel)} · ${bodyCount}`
 })
 const showFavorites = computed(() => props.enabledMapToolIds.includes('favorite'))
 const showHazards = computed(() => props.enabledMapToolIds.includes('safety'))
@@ -62,12 +87,17 @@ function formatDataSourceTime(updatedAt: string): string {
   if (Number.isNaN(date.getTime()))
     return ''
 
-  return new Intl.DateTimeFormat('zh-CN', {
+  return new Intl.DateTimeFormat(locale.value, {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
   }).format(date)
+}
+
+function handleMapViewChange(value: unknown): void {
+  if (value === 'region' || value === 'orbit' || value === 'signal')
+    selectedMapView.value = value
 }
 
 function hazardClass(hazard: HazardZone) {
@@ -79,26 +109,45 @@ function hazardClass(hazard: HazardZone) {
 </script>
 
 <template>
-  <section class="star-map" aria-label="星际地图">
+  <section class="star-map" :data-view="selectedMapView" :aria-label="t('map.label')">
     <div class="star-map__toolbar">
-      <button class="star-map__view-select" type="button">
-        <span aria-hidden="true">⌘</span>
-        <span class="star-map__view-copy star-map__view-copy--desktop">星域视图</span>
-        <span class="star-map__view-copy star-map__view-copy--mobile">标准地图</span>
-        <span aria-hidden="true">⌄</span>
-      </button>
+      <DropdownMenuRoot>
+        <DropdownMenuTrigger class="star-map__view-select">
+          <SmapIcon name="map" :size="17" />
+          <span class="star-map__view-copy star-map__view-copy--desktop">{{ selectedMapViewLabel }}</span>
+          <span class="star-map__view-copy star-map__view-copy--mobile">{{ t('map.view.standard') }}</span>
+          <SmapIcon name="chevron-down" :size="15" />
+        </DropdownMenuTrigger>
+        <DropdownMenuPortal>
+          <DropdownMenuContent class="star-map-view-menu" align="start" :side-offset="8">
+            <DropdownMenuRadioGroup :model-value="selectedMapView" @update:model-value="handleMapViewChange">
+              <DropdownMenuRadioItem
+                v-for="option in mapViewOptions"
+                :key="option.value"
+                class="star-map-view-menu__item"
+                :value="option.value"
+              >
+                <DropdownMenuItemIndicator class="star-map-view-menu__indicator">
+                  <SmapIcon name="check" :size="14" :stroke-width="2.4" />
+                </DropdownMenuItemIndicator>
+                {{ t(option.labelKey) }}
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenuPortal>
+      </DropdownMenuRoot>
       <div
         class="star-map__source-badge"
         :data-status="dataSourceStatus"
         :title="dataSourceTitle"
       >
         <span class="star-map__source-dot" aria-hidden="true"></span>
-        <span>{{ dataSourceLabel }}</span>
+        <span>{{ td(dataSourceLabel) }}</span>
         <span class="star-map__source-time">{{ dataSourceTime }}</span>
       </div>
     </div>
 
-    <svg class="star-map__canvas" viewBox="0 0 1000 640" role="img" aria-label="从地球轨道港到火星中继站的星际航线图">
+    <svg class="star-map__canvas" viewBox="0 0 1000 640" role="img" :aria-label="t('map.ariaRoute')">
       <defs>
         <radialGradient id="smapGlowCyan" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stop-color="#ecffff" />
@@ -144,11 +193,11 @@ function hazardClass(hazard: HazardZone) {
         </g>
 
         <g class="star-map__regions">
-          <text x="178" y="168">织女星域</text>
-          <text x="418" y="358">猎户座旋臂</text>
-          <text x="198" y="550">船底座星域</text>
-          <text x="640" y="540">天炉座星云</text>
-          <text x="800" y="350">女神星监测站</text>
+          <text x="178" y="168">{{ td('织女星域') }}</text>
+          <text x="418" y="358">{{ td('猎户座旋臂') }}</text>
+          <text x="198" y="550">{{ td('船底座星域') }}</text>
+          <text x="640" y="540">{{ td('天炉座星云') }}</text>
+          <text x="800" y="350">{{ td('女神星监测站') }}</text>
         </g>
 
         <g v-if="showLayers" class="star-map__orbits">
@@ -164,7 +213,7 @@ function hazardClass(hazard: HazardZone) {
           <g v-for="hazard in hazards" :key="hazard.id" :class="hazardClass(hazard)">
             <circle :cx="hazard.x" :cy="hazard.y" :r="hazard.radius" />
             <circle :cx="hazard.x" :cy="hazard.y" :r="hazard.radius * 0.58" />
-            <text :x="hazard.x + 18" :y="hazard.y - 12">{{ hazard.label }}</text>
+            <text :x="hazard.x + 18" :y="hazard.y - 12">{{ td(hazard.label) }}</text>
           </g>
         </g>
 
@@ -192,7 +241,7 @@ function hazardClass(hazard: HazardZone) {
           class="star-map__vessel"
           :class="`star-map__vessel--${navigationStatus}`"
           :transform="`translate(${navigationPosition.x} ${navigationPosition.y})`"
-          aria-label="当前航行位置"
+          :aria-label="t('map.currentPosition')"
         >
           <circle class="star-map__vessel-pulse" r="24" />
           <circle class="star-map__vessel-ring" r="14" />
@@ -215,7 +264,7 @@ function hazardClass(hazard: HazardZone) {
             class="star-map__waypoint"
             role="button"
             tabindex="0"
-            :aria-label="`选择地点：${waypoint.label}`"
+            :aria-label="t('map.selectLocation', { name: td(waypoint.label) })"
             :aria-pressed="waypoint.id === selectedWaypointId"
             :class="{
               'star-map__waypoint--selected': waypoint.id === selectedWaypointId,
@@ -235,39 +284,32 @@ function hazardClass(hazard: HazardZone) {
               :r="waypoint.role === 'origin' || waypoint.role === 'destination' ? 11 : 8"
             />
             <rect class="star-map__waypoint-label-bg" x="15" y="-15" width="126" height="30" rx="6" />
-            <text class="star-map__waypoint-label" x="28" y="5">{{ waypoint.label }}</text>
+            <text class="star-map__waypoint-label" x="28" y="5">{{ td(locale === 'en' ? waypoint.shortLabel : waypoint.label) }}</text>
           </g>
         </g>
       </g>
     </svg>
 
-    <div class="star-map__controls" aria-label="地图控件">
-      <button class="star-map__control" type="button" aria-label="定位当前位置" @click="emit('resetZoom')">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <circle cx="12" cy="12" r="4" />
-          <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
-        </svg>
-        <span class="star-map__control-label">定位</span>
+    <div class="star-map__controls" :aria-label="t('map.controls')">
+      <button class="star-map__control" type="button" :aria-label="t('map.locate')" @click="emit('resetZoom')">
+        <SmapIcon name="locate" :size="22" />
+        <span class="star-map__control-label">{{ t('map.locateShort') }}</span>
       </button>
-      <button class="star-map__control" type="button" aria-label="放大" @click="emit('zoomIn')">
-        <span class="star-map__control-symbol" aria-hidden="true">＋</span>
-        <span class="star-map__control-label">放大</span>
+      <button class="star-map__control" type="button" :aria-label="t('map.zoomIn')" @click="emit('zoomIn')">
+        <SmapIcon name="plus" :size="22" />
+        <span class="star-map__control-label">{{ t('map.zoomIn') }}</span>
       </button>
-      <button class="star-map__control" type="button" aria-label="缩小" @click="emit('zoomOut')">
-        <span class="star-map__control-symbol" aria-hidden="true">－</span>
-        <span class="star-map__control-label">缩小</span>
+      <button class="star-map__control" type="button" :aria-label="t('map.zoomOut')" @click="emit('zoomOut')">
+        <SmapIcon name="minus" :size="22" />
+        <span class="star-map__control-label">{{ t('map.zoomOut') }}</span>
       </button>
-      <button class="star-map__control" type="button" aria-label="图层">
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="m12 3 8 4-8 4-8-4 8-4Z" />
-          <path d="m4 12 8 4 8-4" />
-          <path d="m4 17 8 4 8-4" />
-        </svg>
-        <span class="star-map__control-label">图层</span>
+      <button class="star-map__control" type="button" :aria-label="t('map.layers')">
+        <SmapIcon name="layers" :size="22" />
+        <span class="star-map__control-label">{{ t('map.layers') }}</span>
       </button>
     </div>
 
-    <div class="star-map__compass" aria-label="指南针">
+    <div class="star-map__compass" :aria-label="t('map.compass')">
       <span>N</span>
       <i></i>
     </div>
@@ -374,6 +416,25 @@ function hazardClass(hazard: HazardZone) {
   transform-box: fill-box;
   transform-origin: 50% 50%;
   transition: transform 220ms ease;
+}
+
+.star-map[data-view="orbit"] .star-map__regions {
+  opacity: 0.34;
+}
+
+.star-map[data-view="orbit"] .star-map__orbits {
+  filter: drop-shadow(0 0 7px rgba(39, 245, 242, 0.48));
+  opacity: 1;
+}
+
+.star-map[data-view="signal"] .star-map__stars,
+.star-map[data-view="signal"] .star-map__regions {
+  opacity: 0.24;
+}
+
+.star-map[data-view="signal"] .star-map__hazards,
+.star-map[data-view="signal"] .star-map__routes {
+  filter: saturate(1.24) contrast(1.08);
 }
 
 .star-map__space {
@@ -635,20 +696,6 @@ function hazardClass(hazard: HazardZone) {
 
 .star-map__control-label {
   display: none;
-}
-
-.star-map__control-symbol {
-  line-height: 1;
-}
-
-.star-map__controls svg {
-  width: 24px;
-  height: 24px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
 }
 
 .star-map__compass {
@@ -990,6 +1037,60 @@ function hazardClass(hazard: HazardZone) {
 
   .star-map__waypoint-core {
     fill: #17222b;
+  }
+}
+</style>
+
+<style>
+.star-map-view-menu {
+  z-index: 70;
+  min-width: 170px;
+  padding: 7px;
+  border: 1px solid rgba(154, 220, 230, 0.24);
+  border-radius: 10px;
+  color: #eaf8fb;
+  background: rgba(7, 22, 30, 0.98);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.32);
+}
+
+.star-map-view-menu__item {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 8px;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 9px;
+  border-radius: 7px;
+  outline: none;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.star-map-view-menu__item[data-highlighted] {
+  background: rgba(75, 219, 212, 0.13);
+}
+
+.star-map-view-menu__indicator {
+  display: grid;
+  color: #5cefe7;
+  place-items: center;
+}
+
+@media (max-width: 760px) {
+  .star-map-view-menu {
+    border-color: var(--smap-ui-border-strong);
+    color: var(--smap-ui-text);
+    background: var(--smap-ui-surface-raised);
+    box-shadow: var(--smap-ui-shadow);
+  }
+
+  .star-map-view-menu__item[data-highlighted] {
+    background: var(--smap-primary-soft);
+  }
+
+  .star-map-view-menu__indicator {
+    color: var(--smap-primary);
   }
 }
 </style>

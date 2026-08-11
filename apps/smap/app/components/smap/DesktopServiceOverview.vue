@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ExploreSpot, MapTool, MobileService, RideOption, RoutePlace, Waypoint } from './types'
-import { formatRideCtaDetail, formatRideCtaLabel } from './ridePresentation'
+import SmapIcon from './SmapIcon.vue'
 
 type DesktopService = Extract<MobileService, 'explore' | 'ride-hailing'>
 
@@ -23,12 +23,15 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const { t, td } = useSmapI18n()
 
-const rideCtaLabel = computed(() => formatRideCtaLabel(props.rideOption, props.isRideRequested))
-const rideCtaDetail = computed(() => formatRideCtaDetail(
-  props.rideOption,
-  props.isRideRequested,
-  props.origin.label,
+const rideCtaLabel = computed(() => t(
+  props.isRideRequested ? 'ride.responded' : 'ride.call',
+  { vehicle: td(props.rideOption.label) },
+))
+const rideCtaDetail = computed(() => t(
+  props.isRideRequested ? 'ride.enRouteDetail' : 'ride.callDetail',
+  { eta: td(props.rideOption.eta), origin: td(props.origin.label) },
 ))
 
 const selectedSpot = computed(() => {
@@ -37,90 +40,90 @@ const selectedSpot = computed(() => {
 </script>
 
 <template>
-  <aside class="desktop-service-overview" :aria-label="activeService === 'explore' ? '探索详情' : '接驾状态'">
+  <aside class="desktop-service-overview" :aria-label="activeService === 'explore' ? t('explore.details') : t('ride.status')">
     <template v-if="activeService === 'explore'">
       <section class="desktop-service-overview__hero desktop-service-overview__hero--explore">
         <span class="desktop-service-overview__eyebrow">SELECTED LOCATION</span>
-        <span class="desktop-service-overview__orbit" aria-hidden="true">◎</span>
-        <h2>探索详情</h2>
-        <strong>{{ selectedWaypoint.label }}</strong>
-        <p>{{ selectedWaypoint.note ?? '已在星图中锁定该地点' }}</p>
+        <span class="desktop-service-overview__orbit" aria-hidden="true"><SmapIcon name="map-pin" :size="24" /></span>
+        <h2>{{ t('explore.details') }}</h2>
+        <strong>{{ td(selectedWaypoint.label) }}</strong>
+        <p>{{ selectedWaypoint.note ? td(selectedWaypoint.note) : t('explore.locked') }}</p>
       </section>
 
-      <section class="desktop-service-overview__stats" aria-label="探索地点信息">
+      <section class="desktop-service-overview__stats" :aria-label="t('explore.placeInfo')">
         <div>
-          <small>航行时间</small>
-          <strong>{{ selectedWaypoint.time }}</strong>
+          <small>{{ t('explore.travelTime') }}</small>
+          <strong>{{ td(selectedWaypoint.time) }}</strong>
         </div>
         <div>
-          <small>地点类型</small>
-          <strong>{{ selectedSpot?.category ?? '导航节点' }}</strong>
+          <small>{{ t('explore.placeType') }}</small>
+          <strong>{{ selectedSpot ? td(selectedSpot.category) : t('explore.navigationNode') }}</strong>
         </div>
         <div>
-          <small>距当前路线</small>
-          <strong>{{ selectedSpot?.distance ?? '已锁定' }}</strong>
+          <small>{{ t('explore.distance') }}</small>
+          <strong>{{ selectedSpot ? td(selectedSpot.distance) : t('explore.selected') }}</strong>
         </div>
         <div>
-          <small>推荐信息</small>
-          <strong>{{ selectedSpot?.popularity ?? '星图推荐' }}</strong>
+          <small>{{ t('explore.recommendation') }}</small>
+          <strong>{{ selectedSpot ? td(selectedSpot.popularity) : t('explore.mapRecommended') }}</strong>
         </div>
       </section>
 
       <section class="desktop-service-overview__section">
         <div class="desktop-service-overview__section-head">
-          <h3>图层状态</h3>
-          <span>{{ enabledMapToolIds.length }} 项运行中</span>
+          <h3>{{ t('explore.layerStatus') }}</h3>
+          <span>{{ t('explore.running', { count: enabledMapToolIds.length }) }}</span>
         </div>
         <ul class="desktop-service-overview__layer-list">
           <li v-for="tool in mapTools" :key="tool.id" :class="{ 'is-active': enabledMapToolIds.includes(tool.id) }">
             <i aria-hidden="true"></i>
-            <span>{{ tool.label }}</span>
-            <strong>{{ enabledMapToolIds.includes(tool.id) ? '开启' : '关闭' }}</strong>
+            <span>{{ td(tool.label) }}</span>
+            <strong>{{ enabledMapToolIds.includes(tool.id) ? t('explore.on') : t('explore.off') }}</strong>
           </li>
         </ul>
       </section>
 
-      <p class="desktop-service-overview__hint">从左侧选择地点可同步更新星图焦点和这里的详情。</p>
+      <p class="desktop-service-overview__hint">{{ t('explore.hint') }}</p>
     </template>
 
     <template v-else>
       <section class="desktop-service-overview__hero desktop-service-overview__hero--ride">
         <span class="desktop-service-overview__eyebrow">RIDE STATUS</span>
-        <span class="desktop-service-overview__orbit" aria-hidden="true">✦</span>
-        <h2>接驾状态</h2>
-        <strong>{{ isRideRequested ? '快船正在前往上船点' : '等待确认快船' }}</strong>
-        <p>{{ isRideRequested ? `${rideOption.eta} · 船长已确认订单` : '确认后将锁定报价并通知附近船长' }}</p>
+        <span class="desktop-service-overview__orbit" aria-hidden="true"><SmapIcon name="ship" :size="24" /></span>
+        <h2>{{ t('ride.status') }}</h2>
+        <strong>{{ isRideRequested ? t('ride.enRoute') : t('ride.waiting') }}</strong>
+        <p>{{ isRideRequested ? t('ride.captainConfirmed', { eta: td(rideOption.eta) }) : t('ride.confirmHint') }}</p>
       </section>
 
       <section class="desktop-service-overview__ride-card">
-        <span class="desktop-service-overview__ride-badge">{{ rideOption.badge ?? '已选择' }}</span>
-        <h3>{{ rideOption.label }}</h3>
-        <p>{{ rideOption.description }}</p>
+        <span class="desktop-service-overview__ride-badge">{{ rideOption.badge ? td(rideOption.badge) : t('ride.selected') }}</span>
+        <h3>{{ td(rideOption.label) }}</h3>
+        <p>{{ td(rideOption.description) }}</p>
         <div class="desktop-service-overview__ride-price">
           <strong>{{ rideOption.price.replace(' 星币', '') }}</strong>
-          <span>星币</span>
+          <span>{{ t('ride.credits') }}</span>
         </div>
         <dl>
           <div>
-            <dt>接驾</dt>
-            <dd>{{ rideOption.eta }}</dd>
+            <dt>{{ t('ride.pickupEta') }}</dt>
+            <dd>{{ td(rideOption.eta) }}</dd>
           </div>
           <div>
-            <dt>送达</dt>
-            <dd>{{ rideOption.duration }}</dd>
+            <dt>{{ t('ride.arrival') }}</dt>
+            <dd>{{ td(rideOption.duration) }}</dd>
           </div>
         </dl>
       </section>
 
-      <section class="desktop-service-overview__trip" aria-label="当前行程">
-        <h3>当前行程</h3>
+      <section class="desktop-service-overview__trip" :aria-label="t('ride.currentTrip')">
+        <h3>{{ t('ride.currentTrip') }}</h3>
         <div>
           <i class="desktop-service-overview__trip-dot desktop-service-overview__trip-dot--origin" aria-hidden="true"></i>
-          <span><small>上船点</small><strong>{{ origin.label }}</strong></span>
+          <span><small>{{ t('ride.pickup') }}</small><strong>{{ td(origin.label) }}</strong></span>
         </div>
         <div>
           <i class="desktop-service-overview__trip-dot desktop-service-overview__trip-dot--destination" aria-hidden="true"></i>
-          <span><small>目的地</small><strong>{{ destination.label }}</strong></span>
+          <span><small>{{ t('ride.destination') }}</small><strong>{{ td(destination.label) }}</strong></span>
         </div>
       </section>
 

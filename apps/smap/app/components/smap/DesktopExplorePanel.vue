@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import type { SmapIconName } from './iconTypes'
 import type { ExploreSpot, MapTool } from './types'
+import SmapIcon from './SmapIcon.vue'
 
 interface Props {
   enabledMapToolIds: readonly string[]
@@ -15,28 +17,33 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const { t, td } = useSmapI18n()
 
 function isMapToolEnabled(toolId: string): boolean {
   return props.enabledMapToolIds.includes(toolId)
 }
+
+function mapToolIcon(icon: MapTool['icon']): SmapIconName {
+  return icon === 'safety' ? 'shield' : icon
+}
 </script>
 
 <template>
-  <aside class="desktop-explore-panel" aria-label="附近探索">
+  <aside class="desktop-explore-panel" :aria-label="t('explore.title')">
     <header class="desktop-explore-panel__header">
       <div>
         <span class="desktop-explore-panel__eyebrow">EXPLORE</span>
-        <h2>附近探索</h2>
+        <h2>{{ t('explore.title') }}</h2>
       </div>
-      <span class="desktop-explore-panel__count">{{ exploreSpots.length }} 个地点</span>
+      <span class="desktop-explore-panel__count">{{ t('explore.count', { count: exploreSpots.length }) }}</span>
     </header>
 
-    <p class="desktop-explore-panel__intro">补给、维修、休息港与风险提示会同步显示在星图上。</p>
+    <p class="desktop-explore-panel__intro">{{ t('explore.intro') }}</p>
 
     <section class="desktop-explore-panel__section" aria-labelledby="desktop-map-tools-title">
       <div class="desktop-explore-panel__section-head">
-        <h3 id="desktop-map-tools-title">地图工具</h3>
-        <span>{{ enabledMapToolIds.length }}/{{ mapTools.length }} 已开启</span>
+        <h3 id="desktop-map-tools-title">{{ t('explore.tools') }}</h3>
+        <span>{{ t('explore.enabled', { active: enabledMapToolIds.length, total: mapTools.length }) }}</span>
       </div>
 
       <div class="desktop-explore-panel__tools">
@@ -49,10 +56,10 @@ function isMapToolEnabled(toolId: string): boolean {
           :aria-pressed="isMapToolEnabled(tool.id)"
           @click="emit('toggleMapTool', tool.id)"
         >
-          <span class="desktop-explore-panel__tool-icon" :data-icon="tool.icon" aria-hidden="true"></span>
+          <span class="desktop-explore-panel__tool-icon" aria-hidden="true"><SmapIcon :name="mapToolIcon(tool.icon)" :size="17" /></span>
           <span>
-            <strong>{{ tool.label }}</strong>
-            <small>{{ tool.description }}</small>
+            <strong>{{ td(tool.label) }}</strong>
+            <small>{{ td(tool.description) }}</small>
           </span>
           <i aria-hidden="true"></i>
         </button>
@@ -61,8 +68,8 @@ function isMapToolEnabled(toolId: string): boolean {
 
     <section class="desktop-explore-panel__section desktop-explore-panel__section--spots" aria-labelledby="desktop-nearby-title">
       <div class="desktop-explore-panel__section-head">
-        <h3 id="desktop-nearby-title">附近地点</h3>
-        <span>按推荐排序</span>
+        <h3 id="desktop-nearby-title">{{ t('explore.nearby') }}</h3>
+        <span>{{ t('explore.sort') }}</span>
       </div>
 
       <div class="desktop-explore-panel__spots">
@@ -79,11 +86,11 @@ function isMapToolEnabled(toolId: string): boolean {
         >
           <span class="desktop-explore-panel__spot-pin" aria-hidden="true"></span>
           <span class="desktop-explore-panel__spot-copy">
-            <strong>{{ spot.title }}</strong>
-            <small>{{ spot.category }} · {{ spot.distance }}</small>
-            <small>{{ spot.eta }}</small>
+            <strong>{{ td(spot.title) }}</strong>
+            <small>{{ td(spot.category) }} · {{ td(spot.distance) }}</small>
+            <small>{{ td(spot.eta) }}</small>
           </span>
-          <span class="desktop-explore-panel__spot-score">{{ spot.popularity }}</span>
+          <span class="desktop-explore-panel__spot-score">{{ td(spot.popularity) }}</span>
         </button>
       </div>
     </section>
@@ -250,23 +257,6 @@ function isMapToolEnabled(toolId: string): boolean {
   height: 24px;
   border: 1px solid currentColor;
   border-radius: 7px;
-}
-
-.desktop-explore-panel__tool-icon::before {
-  font-size: 13px;
-  content: "◎";
-}
-
-.desktop-explore-panel__tool-icon[data-icon="traffic"]::before {
-  content: "≋";
-}
-
-.desktop-explore-panel__tool-icon[data-icon="favorite"]::before {
-  content: "☆";
-}
-
-.desktop-explore-panel__tool-icon[data-icon="safety"]::before {
-  content: "◇";
 }
 
 .desktop-explore-panel__spots {

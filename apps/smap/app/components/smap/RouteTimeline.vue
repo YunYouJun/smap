@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { NavigationStatus } from './navigationSimulation'
 import { navigationStatusLabel } from './navigationSimulation'
+import SmapIcon from './SmapIcon.vue'
 import type { RouteOption, Waypoint } from './types'
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { t, td } = useSmapI18n()
 
 function isCompleted(index: number): boolean {
   if (props.navigationStatus === 'arrived')
@@ -35,10 +37,10 @@ function isCurrent(index: number): boolean {
 </script>
 
 <template>
-  <footer class="route-timeline" aria-label="航线时间轴">
+  <footer class="route-timeline" :aria-label="t('route.timeline')">
     <div class="route-timeline__heading">
-      <h2>航线时间轴（{{ route.stops }} 个跃迁点）</h2>
-      <span>{{ navigationStatusLabel(navigationStatus) }} · {{ progress }}%</span>
+      <h2>{{ t('route.timelineTitle', { count: route.stops }) }}</h2>
+      <span>{{ td(navigationStatusLabel(navigationStatus)) }} · {{ progress }}%</span>
     </div>
 
     <div class="route-timeline__track">
@@ -54,10 +56,13 @@ function isCurrent(index: number): boolean {
         }"
         :aria-current="isCurrent(index) ? 'step' : undefined"
       >
-        <span class="route-timeline__node">{{ waypoint.role === 'origin' ? '◎' : index }}</span>
+        <span class="route-timeline__node">
+          <SmapIcon v-if="waypoint.role === 'origin'" name="navigate" :size="16" />
+          <template v-else>{{ index }}</template>
+        </span>
         <div>
-          <strong>{{ waypoint.label }}</strong>
-          <span>{{ waypoint.time }}</span>
+          <strong>{{ td(waypoint.label) }}</strong>
+          <span>{{ td(waypoint.time) }}</span>
         </div>
       </article>
     </div>

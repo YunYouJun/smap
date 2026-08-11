@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { MessageKey } from '~/i18n/messages'
 import type { NavigationStatus } from './navigationSimulation'
 import type { MobileService, MobileServiceItem, RouteEndpointRole, RoutePlace } from './types'
-import SmapLogo from './SmapLogo.vue'
+import SmapHeaderBrand from './SmapHeaderBrand.vue'
+import SmapIcon from './SmapIcon.vue'
+import SmapLocaleMenu from './SmapLocaleMenu.vue'
+import SmapServiceNavigation from './SmapServiceNavigation.vue'
 
 interface Props {
   activeService: MobileService
@@ -27,22 +31,30 @@ interface Emits {
 
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
+const { t, td } = useSmapI18n()
 
 const isSearchOpen = computed(() => props.activeSearchRole !== null)
-const activeSearchLabel = computed(() => props.activeSearchRole === 'origin' ? '起点' : '终点')
-const searchPlaceholder = computed(() => `搜索${activeSearchLabel.value}`)
+const activeSearchLabel = computed(() => t(props.activeSearchRole === 'origin' ? 'search.originRole' : 'search.destinationRole'))
+const searchPlaceholder = computed(() => t(props.activeSearchRole === 'origin' ? 'search.origin' : 'search.destination'))
 const navigationStatusText = computed(() => {
   if (props.navigationStatus === 'navigating')
-    return '自动导航中'
+    return t('status.navigating')
 
   if (props.navigationStatus === 'paused')
-    return '导航已暂停'
+    return t('status.paused')
 
   if (props.navigationStatus === 'arrived')
-    return '已抵达目的地'
+    return t('status.arrived')
 
-  return '导航系统正常'
+  return t('status.normal')
 })
+
+const serviceLabelKeys: Record<MobileService, MessageKey> = {
+  navigation: 'nav.navigation',
+  'ride-hailing': 'nav.rideHailing',
+  explore: 'nav.explore',
+  profile: 'nav.profile',
+}
 
 function updateSearchQuery(event: Event): void {
   emit('updateRouteSearchQuery', (event.target as HTMLInputElement).value)
@@ -55,52 +67,29 @@ function focusRouteSearch(role: RouteEndpointRole): void {
 function selectSearchResult(placeId: string): void {
   emit('selectRouteSearchResult', props.activeSearchRole ?? 'destination', placeId)
 }
-
-function serviceSymbol(icon: MobileServiceItem['icon']): string {
-  if (icon === 'taxi')
-    return '⌁'
-
-  if (icon === 'compass')
-    return '⌾'
-
-  if (icon === 'user')
-    return '◉'
-
-  return '◎'
-}
 </script>
 
 <template>
   <header class="smap-topbar">
-    <div class="smap-topbar__brand">
-      <SmapLogo class="smap-topbar__logo" />
-      <span class="smap-topbar__mark">SMAP</span>
-      <span class="smap-topbar__divider"></span>
-      <span class="smap-topbar__title">星际导航</span>
-    </div>
+    <SmapHeaderBrand class="smap-topbar__brand" />
 
     <form class="smap-topbar__search" role="search" @submit.prevent="emit('submitRouteSearch')">
       <span class="smap-topbar__search-icon smap-topbar__search-icon--desktop" aria-hidden="true">
-        <svg viewBox="0 0 24 24">
-          <circle cx="10.8" cy="10.8" r="6.2" />
-          <path d="m16 16 4.2 4.2" />
-        </svg>
+        <SmapIcon name="search" :size="18" />
       </span>
       <button
         class="smap-topbar__mobile-back"
         type="button"
-        :aria-label="isSearchOpen ? '关闭地点搜索' : '打开起点搜索'"
+        :aria-label="isSearchOpen ? t('search.close') : t('search.openOrigin')"
         @click="isSearchOpen ? emit('clearRouteSearch') : focusRouteSearch('origin')"
       >
-        <svg viewBox="0 0 24 24">
-          <path d="m15 5-7 7 7 7" />
-        </svg>
+        <SmapIcon name="arrow-left" :size="28" :stroke-width="2.3" />
       </button>
       <input
         class="smap-topbar__desktop-query"
         :value="searchQuery"
         :placeholder="searchPlaceholder"
-        aria-label="搜索地点"
+        :aria-label="t('search.place')"
         autocomplete="off"
         @focus="focusRouteSearch('destination')"
         @input="updateSearchQuery"
@@ -113,7 +102,7 @@ function serviceSymbol(icon: MobileServiceItem['icon']): string {
           @click="focusRouteSearch('origin')"
         >
           <i class="smap-topbar__route-dot smap-topbar__route-dot--origin"></i>
-          <span>{{ origin.label }}</span>
+          <span>{{ td(origin.label) }}</span>
         </button>
         <button
           class="smap-topbar__route-line"
@@ -122,25 +111,19 @@ function serviceSymbol(icon: MobileServiceItem['icon']): string {
           @click="focusRouteSearch('destination')"
         >
           <i class="smap-topbar__route-dot smap-topbar__route-dot--destination"></i>
-          <span>{{ destination.label }}</span>
+          <span>{{ td(destination.label) }}</span>
         </button>
       </div>
       <kbd class="smap-topbar__desktop-key">/</kbd>
-      <button class="smap-topbar__mobile-swap" type="button" aria-label="交换起终点" @click="emit('swapRouteEndpoints')">
-        <svg viewBox="0 0 24 24">
-          <path d="M7 7h10l-3-3M17 17H7l3 3" />
-          <path d="M17 4v7M7 13v7" />
-        </svg>
+      <button class="smap-topbar__mobile-swap" type="button" :aria-label="t('search.swap')" @click="emit('swapRouteEndpoints')">
+        <SmapIcon name="arrow-up-down" :size="20" />
       </button>
     </form>
 
     <div v-if="isSearchOpen" class="smap-topbar__suggestions">
       <label class="smap-topbar__suggestion-search">
         <span class="smap-topbar__suggestion-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24">
-            <circle cx="10.8" cy="10.8" r="6.2" />
-            <path d="m16 16 4.2 4.2" />
-          </svg>
+          <SmapIcon name="search" :size="17" />
         </span>
         <input
           :value="searchQuery"
@@ -153,7 +136,7 @@ function serviceSymbol(icon: MobileServiceItem['icon']): string {
         >
       </label>
 
-      <div class="smap-topbar__suggestion-list" role="listbox" :aria-label="`${activeSearchLabel}候选地点`">
+      <div class="smap-topbar__suggestion-list" role="listbox" :aria-label="t('search.candidates', { role: activeSearchLabel })">
         <button
           v-for="place in searchResults"
           :key="place.id"
@@ -164,16 +147,16 @@ function serviceSymbol(icon: MobileServiceItem['icon']): string {
         >
           <span class="smap-topbar__suggestion-pin" :data-source="place.source" aria-hidden="true"></span>
           <span class="smap-topbar__suggestion-copy">
-            <strong>{{ place.label }}</strong>
-            <small>{{ place.category }} · {{ place.description }}</small>
+            <strong>{{ td(place.label) }}</strong>
+            <small>{{ td(place.category) }} · {{ td(place.description) }}</small>
           </span>
-          <span class="smap-topbar__suggestion-action">设为{{ activeSearchLabel }}</span>
+          <span class="smap-topbar__suggestion-action">{{ t('search.setAs', { role: activeSearchLabel }) }}</span>
         </button>
-        <p v-if="searchResults.length === 0" class="smap-topbar__empty">未找到地点</p>
+        <p v-if="searchResults.length === 0" class="smap-topbar__empty">{{ t('search.empty') }}</p>
       </div>
     </div>
 
-    <div class="smap-topbar__mobile-tabs" role="tablist" aria-label="移动端出行方式">
+    <div class="smap-topbar__mobile-tabs" role="tablist" :aria-label="t('topbar.mobileServices')">
       <button
         v-for="service in services"
         :key="service.id"
@@ -184,26 +167,19 @@ function serviceSymbol(icon: MobileServiceItem['icon']): string {
         :aria-selected="activeService === service.id"
         @click="emit('selectService', service.id)"
       >
-        {{ service.label }}
+        {{ t(serviceLabelKeys[service.id]) }}
       </button>
     </div>
 
-    <nav class="smap-topbar__nav" aria-label="主要服务">
-      <button
-        v-for="service in services"
-        :key="service.id"
-        class="smap-topbar__nav-button"
-        :class="{ 'smap-topbar__nav-button--active': activeService === service.id }"
-        type="button"
-        :aria-current="activeService === service.id ? 'page' : undefined"
-        @click="emit('selectService', service.id)"
-      >
-        <span aria-hidden="true">{{ serviceSymbol(service.icon) }}</span>
-        {{ service.label }}
-      </button>
-    </nav>
+    <SmapServiceNavigation
+      class="smap-topbar__nav"
+      :active-service="activeService"
+      :services="services"
+      @select-service="emit('selectService', $event)"
+    />
 
     <div class="smap-topbar__account">
+      <SmapLocaleMenu />
       <slot name="account">
         <div
           class="smap-topbar__status"
@@ -229,39 +205,6 @@ function serviceSymbol(icon: MobileServiceItem['icon']): string {
   padding: 10px 14px;
   border-bottom: 1px solid rgba(112, 236, 232, 0.16);
   background: linear-gradient(180deg, rgba(4, 15, 21, 0.98), rgba(5, 18, 25, 0.92));
-}
-
-.smap-topbar__brand {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  min-width: 0;
-}
-
-.smap-topbar__logo {
-  width: 32px;
-  height: 32px;
-  filter: drop-shadow(0 0 12px rgba(33, 243, 233, 0.28));
-}
-
-.smap-topbar__mark {
-  color: #f4fbff;
-  font-size: 28px;
-  font-weight: 760;
-  line-height: 1;
-}
-
-.smap-topbar__divider {
-  width: 1px;
-  height: 24px;
-  background: rgba(208, 237, 244, 0.24);
-}
-
-.smap-topbar__title {
-  color: #28f3ec;
-  font-size: 18px;
-  font-weight: 650;
-  white-space: nowrap;
 }
 
 .smap-topbar__search {
@@ -464,34 +407,6 @@ function serviceSymbol(icon: MobileServiceItem['icon']): string {
   text-align: center;
 }
 
-.smap-topbar__nav {
-  display: flex;
-  justify-content: center;
-  gap: 4px;
-  min-width: 0;
-}
-
-.smap-topbar__nav-button {
-  display: inline-flex;
-  gap: 7px;
-  align-items: center;
-  justify-content: center;
-  min-width: 76px;
-  height: 38px;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  color: #b8c9d2;
-  background: transparent;
-  font-size: 14px;
-  font-weight: 560;
-  cursor: pointer;
-}
-
-.smap-topbar__nav-button--active {
-  border-bottom-color: #26f2ed;
-  color: #efffff;
-}
-
 .smap-topbar__status {
   display: inline-flex;
   gap: 8px;
@@ -504,6 +419,8 @@ function serviceSymbol(icon: MobileServiceItem['icon']): string {
 
 .smap-topbar__account {
   display: flex;
+  gap: 10px;
+  align-items: center;
   justify-content: flex-end;
   min-width: 0;
 }
@@ -773,9 +690,6 @@ function serviceSymbol(icon: MobileServiceItem['icon']): string {
     color: var(--smap-primary);
   }
 
-  .smap-topbar__nav-button {
-    min-width: 72px;
-  }
 }
 
 @media (prefers-color-scheme: dark) and (max-width: 760px) {

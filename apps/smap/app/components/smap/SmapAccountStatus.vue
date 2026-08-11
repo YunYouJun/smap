@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import SmapIcon from './SmapIcon.vue'
 
 interface Props {
   variant?: 'compact' | 'profile'
@@ -8,6 +9,7 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   variant: 'compact',
 })
+const { t } = useSmapI18n()
 
 const smapFallbackAvatar = '/smap/avatar-fallback.svg'
 
@@ -37,9 +39,9 @@ const accountAvatarSrc = computed(() => {
 
 const buttonLabel = computed(() => {
   if (isLoading.value)
-    return '登录中'
+    return t('auth.signingIn')
 
-  return '登录 YunLeFun'
+  return t('auth.signIn')
 })
 
 const accountHint = computed(() => {
@@ -48,14 +50,14 @@ const accountHint = computed(() => {
 
   if (isAuthenticated.value) {
     if (sessionMode.value === 'browser')
-      return inNativeApp.value ? 'App 内已验证 · 浏览器临时会话' : '已验证 · 浏览器临时会话'
+      return inNativeApp.value ? t('auth.nativeVerifiedBrowser') : t('auth.verifiedBrowser')
 
-    return inNativeApp.value ? 'YunLeFun App 内已同步' : '已建立安全服务器会话'
+    return inNativeApp.value ? t('auth.syncedNative') : t('auth.serverSession')
   }
 
   return sessionMode.value === 'browser'
-    ? '安全重定向 · 浏览器临时会话'
-    : '安全重定向 · 服务器长期会话'
+    ? t('auth.redirectBrowser')
+    : t('auth.redirectServer')
 })
 
 const accountClasses = computed(() => ({
@@ -93,8 +95,8 @@ async function login(): Promise<void> {
     href="https://yunle.fun/settings"
     rel="noreferrer"
     target="_blank"
-    :aria-label="`打开 ${displayName} 的 YunLeFun 账号设置`"
-    title="打开 YunLeFun 账号设置"
+    :aria-label="t('auth.openSettings', { name: displayName })"
+    :title="t('auth.openSettingsTitle')"
   >
     <span class="smap-account__avatar" aria-hidden="true">
       <img :src="accountAvatarSrc" alt="" @error="useFallbackAvatar">
@@ -112,15 +114,11 @@ async function login(): Promise<void> {
     type="button"
     :disabled="isLoading"
     :aria-label="buttonLabel"
-    :title="errorMessage || '使用 YunLeFun 登录'"
+    :title="errorMessage || t('auth.signInTitle')"
     @click="login"
   >
     <span class="smap-account__icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24">
-        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-        <path d="m10 17 5-5-5-5" />
-        <path d="M15 12H3" />
-      </svg>
+      <SmapIcon name="login" :size="19" :stroke-width="2.1" />
     </span>
     <span class="smap-account__content">
       <span class="smap-account__name">{{ buttonLabel }}</span>
@@ -191,16 +189,6 @@ async function login(): Promise<void> {
   width: 17px;
   height: 17px;
   place-items: center;
-}
-
-.smap-account__icon svg {
-  width: 17px;
-  height: 17px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.2;
 }
 
 .smap-account__name {
@@ -278,11 +266,6 @@ async function login(): Promise<void> {
   color: #fff;
   background: var(--smap-primary, #1677ff);
   font-size: 15px;
-}
-
-.smap-account--profile .smap-account__icon svg {
-  width: 20px;
-  height: 20px;
 }
 
 .smap-account--profile .smap-account__name {

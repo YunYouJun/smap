@@ -22,6 +22,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const route = useRoute()
+const { t, td } = useSmapI18n()
 
 const serviceRoutes: Record<MobileService, string> = {
   navigation: '/tabs/map',
@@ -272,7 +273,7 @@ function handleRouteSearchSubmit(): void {
     />
 
     <p class="smap-navigator__mode-note">
-      当前策略：{{ activeMode.label }} · {{ activeMode.description }}
+      {{ t('route.currentStrategy', { mode: td(activeMode.label), description: td(activeMode.description) }) }}
     </p>
   </div>
 </template>

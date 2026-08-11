@@ -143,6 +143,34 @@ test('desktop ride selection reaches a visible response state and service routes
   expect(runtimeErrors).toEqual([])
 })
 
+test('desktop profile keeps the SMAP shell, locale, and service navigation connected', async ({ page }) => {
+  const runtimeErrors = collectRuntimeErrors(page)
+
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/tabs/profile')
+
+  await expect(page).toHaveURL(/\/tabs\/profile$/)
+  await expect(page.getByRole('heading', { name: '我的', exact: true })).toBeVisible()
+  await expect(page.getByText('在一个界面中管理 YunLeFun 账号、最近行程与星际导航偏好。', { exact: true })).toBeVisible()
+
+  const primaryNavigation = page.getByRole('navigation', { name: '主要服务' })
+  await expect(primaryNavigation.getByRole('button', { name: '我的', exact: true })).toHaveAttribute('aria-current', 'page')
+
+  const profileScroller = page.locator('.smap-profile-page')
+  await expect.poll(async () => profileScroller.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true)
+
+  await page.getByRole('button', { name: '切换语言' }).click()
+  await page.getByRole('menuitemradio', { name: /English/ }).click()
+  await expect(page.getByRole('heading', { name: 'Profile', exact: true })).toBeVisible()
+  await expect(page).toHaveTitle('SMAP Interstellar Navigation')
+
+  await page.getByRole('navigation', { name: 'Primary services' }).getByRole('button', { name: 'Navigate', exact: true }).click()
+  await expect(page).toHaveURL(/\/tabs\/map$/)
+  await expect(page.getByRole('region', { name: 'Interstellar map' })).toBeVisible()
+
+  expect(runtimeErrors).toEqual([])
+})
+
 test('mobile explore and ride expose the same core actions', async ({ page }) => {
   const runtimeErrors = collectRuntimeErrors(page)
 
