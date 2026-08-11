@@ -34,7 +34,7 @@ catalog:
   '@yunyoujun/docs': ^0.1.14
   eslint: ^10.7.0
   floating-vue: ^5.2.2
-  lint-staged: ^17.0.8
+  lint-staged: ^17.3.0
   nuxt: ^4.4.8
   pinia: ^3.0.4
   reka-ui: ^2.10.3
