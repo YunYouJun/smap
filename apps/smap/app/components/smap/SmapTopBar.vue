@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { MessageKey } from '~/i18n/messages'
 import type { NavigationStatus } from './navigationSimulation'
 import type { MobileService, MobileServiceItem, RouteEndpointRole, RoutePlace } from './types'
-import SmapHeaderBrand from './SmapHeaderBrand.vue'
+import SmapAppHeader from './SmapAppHeader.vue'
 import SmapIcon from './SmapIcon.vue'
 import SmapLocaleMenu from './SmapLocaleMenu.vue'
-import SmapServiceNavigation from './SmapServiceNavigation.vue'
 
 interface Props {
   activeService: MobileService
@@ -33,6 +31,10 @@ const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 const { t, td } = useSmapI18n()
 
+defineSlots<{
+  account?: () => unknown
+}>()
+
 const isSearchOpen = computed(() => props.activeSearchRole !== null)
 const activeSearchLabel = computed(() => t(props.activeSearchRole === 'origin' ? 'search.originRole' : 'search.destinationRole'))
 const searchPlaceholder = computed(() => t(props.activeSearchRole === 'origin' ? 'search.origin' : 'search.destination'))
@@ -49,13 +51,6 @@ const navigationStatusText = computed(() => {
   return t('status.normal')
 })
 
-const serviceLabelKeys: Record<MobileService, MessageKey> = {
-  navigation: 'nav.navigation',
-  'ride-hailing': 'nav.rideHailing',
-  explore: 'nav.explore',
-  profile: 'nav.profile',
-}
-
 function updateSearchQuery(event: Event): void {
   emit('updateRouteSearchQuery', (event.target as HTMLInputElement).value)
 }
@@ -70,115 +65,101 @@ function selectSearchResult(placeId: string): void {
 </script>
 
 <template>
-  <header class="smap-topbar">
-    <SmapHeaderBrand class="smap-topbar__brand" />
-
-    <form class="smap-topbar__search" role="search" @submit.prevent="emit('submitRouteSearch')">
-      <span class="smap-topbar__search-icon smap-topbar__search-icon--desktop" aria-hidden="true">
-        <SmapIcon name="search" :size="18" />
-      </span>
-      <button
-        class="smap-topbar__mobile-back"
-        type="button"
-        :aria-label="isSearchOpen ? t('search.close') : t('search.openOrigin')"
-        @click="isSearchOpen ? emit('clearRouteSearch') : focusRouteSearch('origin')"
-      >
-        <SmapIcon name="arrow-left" :size="28" :stroke-width="2.3" />
-      </button>
-      <input
-        class="smap-topbar__desktop-query"
-        :value="searchQuery"
-        :placeholder="searchPlaceholder"
-        :aria-label="t('search.place')"
-        autocomplete="off"
-        @focus="focusRouteSearch('destination')"
-        @input="updateSearchQuery"
-      >
-      <div class="smap-topbar__mobile-route">
-        <button
-          class="smap-topbar__route-line"
-          :class="{ 'smap-topbar__route-line--active': activeSearchRole === 'origin' }"
-          type="button"
-          @click="focusRouteSearch('origin')"
-        >
-          <i class="smap-topbar__route-dot smap-topbar__route-dot--origin"></i>
-          <span>{{ td(origin.label) }}</span>
-        </button>
-        <button
-          class="smap-topbar__route-line"
-          :class="{ 'smap-topbar__route-line--active': activeSearchRole === 'destination' }"
-          type="button"
-          @click="focusRouteSearch('destination')"
-        >
-          <i class="smap-topbar__route-dot smap-topbar__route-dot--destination"></i>
-          <span>{{ td(destination.label) }}</span>
-        </button>
-      </div>
-      <kbd class="smap-topbar__desktop-key">/</kbd>
-      <button class="smap-topbar__mobile-swap" type="button" :aria-label="t('search.swap')" @click="emit('swapRouteEndpoints')">
-        <SmapIcon name="arrow-up-down" :size="20" />
-      </button>
-    </form>
-
-    <div v-if="isSearchOpen" class="smap-topbar__suggestions">
-      <label class="smap-topbar__suggestion-search">
-        <span class="smap-topbar__suggestion-icon" aria-hidden="true">
-          <SmapIcon name="search" :size="17" />
+  <SmapAppHeader
+    class="smap-topbar"
+    :active-service="activeService"
+    mobile-mode="navigation"
+    :services="services"
+    @select-service="emit('selectService', $event)"
+  >
+    <template #context>
+      <form class="smap-topbar__search" role="search" @submit.prevent="emit('submitRouteSearch')">
+        <span class="smap-topbar__search-icon smap-topbar__search-icon--desktop" aria-hidden="true">
+          <SmapIcon name="search" :size="18" />
         </span>
+        <button
+          class="smap-topbar__mobile-back"
+          type="button"
+          :aria-label="isSearchOpen ? t('search.close') : t('search.openOrigin')"
+          @click="isSearchOpen ? emit('clearRouteSearch') : focusRouteSearch('origin')"
+        >
+          <SmapIcon name="arrow-left" :size="28" :stroke-width="2.3" />
+        </button>
         <input
+          class="smap-topbar__desktop-query"
           :value="searchQuery"
           :placeholder="searchPlaceholder"
-          :aria-label="searchPlaceholder"
+          :aria-label="t('search.place')"
           autocomplete="off"
-          autofocus
+          @focus="focusRouteSearch('destination')"
           @input="updateSearchQuery"
-          @keydown.enter.prevent="emit('submitRouteSearch')"
         >
-      </label>
-
-      <div class="smap-topbar__suggestion-list" role="listbox" :aria-label="t('search.candidates', { role: activeSearchLabel })">
-        <button
-          v-for="place in searchResults"
-          :key="place.id"
-          class="smap-topbar__suggestion"
-          type="button"
-          role="option"
-          @click="selectSearchResult(place.id)"
-        >
-          <span class="smap-topbar__suggestion-pin" :data-source="place.source" aria-hidden="true"></span>
-          <span class="smap-topbar__suggestion-copy">
-            <strong>{{ td(place.label) }}</strong>
-            <small>{{ td(place.category) }} · {{ td(place.description) }}</small>
-          </span>
-          <span class="smap-topbar__suggestion-action">{{ t('search.setAs', { role: activeSearchLabel }) }}</span>
+        <div class="smap-topbar__mobile-route">
+          <button
+            class="smap-topbar__route-line"
+            :class="{ 'smap-topbar__route-line--active': activeSearchRole === 'origin' }"
+            type="button"
+            @click="focusRouteSearch('origin')"
+          >
+            <i class="smap-topbar__route-dot smap-topbar__route-dot--origin"></i>
+            <span>{{ td(origin.label) }}</span>
+          </button>
+          <button
+            class="smap-topbar__route-line"
+            :class="{ 'smap-topbar__route-line--active': activeSearchRole === 'destination' }"
+            type="button"
+            @click="focusRouteSearch('destination')"
+          >
+            <i class="smap-topbar__route-dot smap-topbar__route-dot--destination"></i>
+            <span>{{ td(destination.label) }}</span>
+          </button>
+        </div>
+        <kbd class="smap-topbar__desktop-key">/</kbd>
+        <button class="smap-topbar__mobile-swap" type="button" :aria-label="t('search.swap')" @click="emit('swapRouteEndpoints')">
+          <SmapIcon name="arrow-up-down" :size="20" />
         </button>
-        <p v-if="searchResults.length === 0" class="smap-topbar__empty">{{ t('search.empty') }}</p>
+      </form>
+    </template>
+
+    <template v-if="isSearchOpen" #overlay>
+      <div class="smap-topbar__suggestions">
+        <label class="smap-topbar__suggestion-search">
+          <span class="smap-topbar__suggestion-icon" aria-hidden="true">
+            <SmapIcon name="search" :size="17" />
+          </span>
+          <input
+            :value="searchQuery"
+            :placeholder="searchPlaceholder"
+            :aria-label="searchPlaceholder"
+            autocomplete="off"
+            autofocus
+            @input="updateSearchQuery"
+            @keydown.enter.prevent="emit('submitRouteSearch')"
+          >
+        </label>
+
+        <div class="smap-topbar__suggestion-list" role="listbox" :aria-label="t('search.candidates', { role: activeSearchLabel })">
+          <button
+            v-for="place in searchResults"
+            :key="place.id"
+            class="smap-topbar__suggestion"
+            type="button"
+            role="option"
+            @click="selectSearchResult(place.id)"
+          >
+            <span class="smap-topbar__suggestion-pin" :data-source="place.source" aria-hidden="true"></span>
+            <span class="smap-topbar__suggestion-copy">
+              <strong>{{ td(place.label) }}</strong>
+              <small>{{ td(place.category) }} · {{ td(place.description) }}</small>
+            </span>
+            <span class="smap-topbar__suggestion-action">{{ t('search.setAs', { role: activeSearchLabel }) }}</span>
+          </button>
+          <p v-if="searchResults.length === 0" class="smap-topbar__empty">{{ t('search.empty') }}</p>
+        </div>
       </div>
-    </div>
+    </template>
 
-    <div class="smap-topbar__mobile-tabs" role="tablist" :aria-label="t('topbar.mobileServices')">
-      <button
-        v-for="service in services"
-        :key="service.id"
-        class="smap-topbar__mobile-tab"
-        :class="{ 'smap-topbar__mobile-tab--active': activeService === service.id }"
-        type="button"
-        role="tab"
-        :aria-selected="activeService === service.id"
-        @click="emit('selectService', service.id)"
-      >
-        {{ t(serviceLabelKeys[service.id]) }}
-      </button>
-    </div>
-
-    <SmapServiceNavigation
-      class="smap-topbar__nav"
-      :active-service="activeService"
-      :services="services"
-      @select-service="emit('selectService', $event)"
-    />
-
-    <div class="smap-topbar__account">
+    <template #actions>
       <SmapLocaleMenu />
       <slot name="account">
         <div
@@ -190,23 +171,11 @@ function selectSearchResult(placeId: string): void {
           {{ navigationStatusText }}
         </div>
       </slot>
-    </div>
-  </header>
+    </template>
+  </SmapAppHeader>
 </template>
 
 <style scoped>
-.smap-topbar {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(240px, 420px) minmax(280px, 1fr) auto;
-  gap: 16px;
-  align-items: center;
-  min-height: 56px;
-  padding: 10px 14px;
-  border-bottom: 1px solid rgba(112, 236, 232, 0.16);
-  background: linear-gradient(180deg, rgba(4, 15, 21, 0.98), rgba(5, 18, 25, 0.92));
-}
-
 .smap-topbar__search {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -390,8 +359,7 @@ function selectSearchResult(placeId: string): void {
 
 .smap-topbar__mobile-route,
 .smap-topbar__mobile-back,
-.smap-topbar__mobile-swap,
-.smap-topbar__mobile-tabs {
+.smap-topbar__mobile-swap {
   display: none;
 }
 
@@ -417,14 +385,6 @@ function selectSearchResult(placeId: string): void {
   white-space: nowrap;
 }
 
-.smap-topbar__account {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: flex-end;
-  min-width: 0;
-}
-
 .smap-topbar__pulse {
   width: 9px;
   height: 9px;
@@ -438,42 +398,9 @@ function selectSearchResult(placeId: string): void {
   box-shadow: 0 0 14px rgba(255, 173, 47, 0.9);
 }
 
-@media (max-width: 1180px) {
-  .smap-topbar {
-    grid-template-columns: auto 1fr auto;
-  }
-
-  .smap-topbar__nav {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
-    overflow-x: auto;
-  }
-}
-
 @media (max-width: 760px) {
-  .smap-topbar {
-    position: absolute;
-    z-index: 9;
-    inset: 0 0 auto;
-    grid-template-columns: 1fr;
-    gap: 8px;
-    min-height: 0;
-    padding: max(12px, env(safe-area-inset-top)) 12px 0;
-    border-bottom: 0;
-    background:
-      linear-gradient(180deg, rgba(238, 244, 246, 0.98), rgba(238, 244, 246, 0.76) 62%, transparent),
-      transparent;
-  }
-
-  .smap-topbar__brand,
   .smap-topbar__status {
     display: none;
-  }
-
-  .smap-topbar__account {
-    position: absolute;
-    top: 116px;
-    right: 12px;
   }
 
   .smap-topbar__search {
@@ -509,8 +436,7 @@ function selectSearchResult(placeId: string): void {
 
   .smap-topbar__desktop-query,
   .smap-topbar__desktop-key,
-  .smap-topbar__search-icon--desktop,
-  .smap-topbar__nav {
+  .smap-topbar__search-icon--desktop {
     display: none;
   }
 
@@ -602,47 +528,6 @@ function selectSearchResult(placeId: string): void {
     stroke-width: 2.1;
   }
 
-  .smap-topbar__mobile-tabs {
-    display: none;
-    gap: 8px;
-    align-items: center;
-    width: max-content;
-    max-width: 100%;
-    min-height: 38px;
-    padding: 4px;
-    overflow-x: auto;
-    border-radius: 999px;
-    background: var(--smap-ui-surface-raised);
-    box-shadow: var(--smap-ui-shadow);
-    scrollbar-width: none;
-  }
-
-  .smap-topbar__mobile-tabs::-webkit-scrollbar {
-    display: none;
-  }
-
-  .smap-topbar__mobile-tab {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 62px;
-    height: 30px;
-    border: 0;
-    border-radius: 999px;
-    color: var(--smap-ui-muted);
-    background: transparent;
-    font: inherit;
-    font-size: 14px;
-    font-weight: 760;
-    white-space: nowrap;
-  }
-
-  .smap-topbar__mobile-tab--active {
-    color: var(--smap-on-primary);
-    background: var(--smap-primary);
-    box-shadow: 0 8px 18px rgba(22, 119, 255, 0.28);
-  }
-
   .smap-topbar__suggestions {
     top: calc(max(12px, env(safe-area-inset-top)) + 96px);
     right: 12px;
@@ -693,12 +578,6 @@ function selectSearchResult(placeId: string): void {
 }
 
 @media (prefers-color-scheme: dark) and (max-width: 760px) {
-  .smap-topbar {
-    background:
-      linear-gradient(180deg, rgba(16, 23, 29, 0.96), rgba(16, 23, 29, 0.68) 62%, transparent),
-      transparent;
-  }
-
   .smap-topbar__search {
     box-shadow: 0 14px 30px rgba(0, 0, 0, 0.3);
   }

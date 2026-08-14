@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { navigateTo, useRoute } from '#imports'
 import type { MobileService, RouteEndpointRole } from './types'
 import DesktopExplorePanel from './DesktopExplorePanel.vue'
 import DesktopRidePanel from './DesktopRidePanel.vue'
@@ -12,6 +11,7 @@ import SmapTopBar from './SmapTopBar.vue'
 import StarMapCanvas from './StarMapCanvas.vue'
 import TelemetryPanel from './TelemetryPanel.vue'
 import { useSmapNavigation } from './useSmapNavigation'
+import { useSmapServiceRouter } from './useSmapServiceRouter'
 
 interface Props {
   initialService?: MobileService
@@ -21,15 +21,7 @@ const props = withDefaults(defineProps<Props>(), {
   initialService: 'navigation',
 })
 
-const route = useRoute()
 const { t, td } = useSmapI18n()
-
-const serviceRoutes: Record<MobileService, string> = {
-  navigation: '/tabs/map',
-  explore: '/tabs/explore',
-  'ride-hailing': '/tabs/ride',
-  profile: '/tabs/profile',
-}
 
 const {
   activeMobileService,
@@ -94,14 +86,7 @@ const {
   resetZoom,
 } = useSmapNavigation(props.initialService)
 
-function goToService(service: MobileService): void {
-  selectMobileService(service)
-
-  const targetRoute = serviceRoutes[service]
-
-  if (route.path !== targetRoute)
-    void navigateTo(targetRoute)
-}
+const { goToService } = useSmapServiceRouter({ beforeNavigate: selectMobileService })
 
 function handleRouteSearchResult(role: RouteEndpointRole, placeId: string): void {
   selectRouteSearchResult(role, placeId)
@@ -317,7 +302,6 @@ function handleRouteSearchSubmit(): void {
   height: 100vh;
   min-height: 100vh;
   overflow: hidden;
-  border: 1px solid rgba(122, 239, 236, 0.14);
   color: #d9edf3;
   background: var(--smap-page-bg);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;

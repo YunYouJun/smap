@@ -13,6 +13,51 @@ function collectRuntimeErrors(page: Page): string[] {
   return errors
 }
 
+interface DesktopHeaderMetrics {
+  brand: { height: number, width: number, x: number, y: number }
+  logo: { height: number, width: number }
+  markFontSize: string
+  navigation: { height: number, width: number, x: number, y: number }
+  titleFontSize: string
+}
+
+async function readDesktopHeaderMetrics(page: Page): Promise<DesktopHeaderMetrics> {
+  const brand = page.locator('.smap-header-brand')
+  const logo = brand.locator('.smap-header-brand__logo')
+  const navigation = page.getByRole('navigation', { name: '主要服务' })
+  const [brandBox, logoBox, navigationBox, markFontSize, titleFontSize] = await Promise.all([
+    brand.boundingBox(),
+    logo.boundingBox(),
+    navigation.boundingBox(),
+    brand.locator('.smap-header-brand__mark').evaluate(element => element.ownerDocument.defaultView?.getComputedStyle(element).fontSize ?? ''),
+    brand.locator('.smap-header-brand__title').evaluate(element => element.ownerDocument.defaultView?.getComputedStyle(element).fontSize ?? ''),
+  ])
+
+  if (!brandBox || !logoBox || !navigationBox)
+    throw new Error('Desktop app header is not visible')
+
+  return {
+    brand: {
+      height: brandBox.height,
+      width: brandBox.width,
+      x: brandBox.x,
+      y: brandBox.y,
+    },
+    logo: {
+      height: logoBox.height,
+      width: logoBox.width,
+    },
+    markFontSize,
+    navigation: {
+      height: navigationBox.height,
+      width: navigationBox.width,
+      x: navigationBox.x,
+      y: navigationBox.y,
+    },
+    titleFontSize,
+  }
+}
+
 test('desktop navigation loads static data without requesting a missing API', async ({ page }) => {
   const runtimeErrors = collectRuntimeErrors(page)
   const apiRequests: string[] = []
@@ -169,6 +214,19 @@ test('desktop profile keeps the SMAP shell, locale, and service navigation conne
   await expect(page.getByRole('region', { name: 'Interstellar map' })).toBeVisible()
 
   expect(runtimeErrors).toEqual([])
+})
+
+test('desktop routes share the exact same app header geometry', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.goto('/tabs/map')
+
+  const mapHeader = await readDesktopHeaderMetrics(page)
+
+  await page.goto('/tabs/profile')
+  const profileHeader = await readDesktopHeaderMetrics(page)
+
+  expect(profileHeader).toEqual(mapHeader)
+  await expect(page.locator('.smap-header-brand--compact')).toHaveCount(0)
 })
 
 test('mobile explore and ride expose the same core actions', async ({ page }) => {
