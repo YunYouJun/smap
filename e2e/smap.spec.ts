@@ -201,7 +201,7 @@ test('desktop profile keeps the SMAP shell, locale, and service navigation conne
   const primaryNavigation = page.getByRole('navigation', { name: '主要服务' })
   await expect(primaryNavigation.getByRole('button', { name: '我的', exact: true })).toHaveAttribute('aria-current', 'page')
 
-  const profileScroller = page.locator('.smap-profile-page')
+  const profileScroller = page.locator('.profile-page')
   await expect.poll(async () => profileScroller.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true)
 
   await page.getByRole('button', { name: '切换语言' }).click()
@@ -224,9 +224,14 @@ test('desktop routes share the exact same app header geometry', async ({ page })
 
   await page.goto('/tabs/profile')
   const profileHeader = await readDesktopHeaderMetrics(page)
+  const profileScroller = page.locator('.profile-page')
 
   expect(profileHeader).toEqual(mapHeader)
   await expect(page.locator('.smap-header-brand--compact')).toHaveCount(0)
+  await expect.poll(async () => profileScroller.evaluate(element => element.scrollHeight > element.clientHeight)).toBe(true)
+
+  await profileScroller.evaluate(element => element.scrollTo({ top: element.scrollHeight }))
+  await expect.poll(() => readDesktopHeaderMetrics(page)).toEqual(profileHeader)
 })
 
 test('mobile explore and ride expose the same core actions', async ({ page }) => {

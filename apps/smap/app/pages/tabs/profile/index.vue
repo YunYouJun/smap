@@ -12,9 +12,7 @@ import SmapProfilePage from '~/components/smap/SmapProfilePage.vue'
 .smap-profile-page {
   width: 100%;
   height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   background: var(--smap-cloud);
-  scrollbar-gutter: stable;
 }
 </style>

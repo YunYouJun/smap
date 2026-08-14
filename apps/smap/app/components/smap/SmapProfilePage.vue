@@ -49,20 +49,27 @@ const { t } = useSmapI18n()
   --profile-primary: var(--smap-orbit);
   --profile-primary-strong: var(--smap-orbit-strong);
   --smap-focus-ring: var(--smap-orbit);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   width: 100%;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
   background: var(--smap-cloud);
 }
 
 .profile-page {
   width: 100%;
-  min-height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   padding: 30px clamp(18px, 3vw, 48px) 48px;
   color: var(--smap-text);
   background:
     radial-gradient(circle at 18% 0%, rgba(70, 159, 255, 0.12), transparent 28%),
     linear-gradient(180deg, #eef7ff 0%, #f7f9fb 28%, #f3f5f7 100%);
   font-family: var(--smap-font-body);
+  scrollbar-gutter: stable;
 }
 
 .profile-page__heading,
@@ -141,7 +148,6 @@ const { t } = useSmapI18n()
 
 @media (max-width: 760px) {
   .profile-page {
-    min-height: 100dvh;
     padding: max(18px, env(safe-area-inset-top)) 14px calc(var(--smap-mobile-tabbar-offset, 0px) + 28px);
   }
 
