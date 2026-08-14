@@ -1,19 +1,11 @@
 <script setup lang="ts">
 import SmapLogo from './SmapLogo.vue'
 
-interface Props {
-  compact?: boolean
-}
-
-withDefaults(defineProps<Props>(), {
-  compact: false,
-})
-
 const { t } = useSmapI18n()
 </script>
 
 <template>
-  <NuxtLink class="smap-header-brand" :class="{ 'smap-header-brand--compact': compact }" to="/tabs/map">
+  <NuxtLink class="smap-header-brand" to="/tabs/map">
     <SmapLogo class="smap-header-brand__logo" />
     <span class="smap-header-brand__mark">SMAP</span>
     <span class="smap-header-brand__divider" aria-hidden="true"></span>
@@ -60,19 +52,6 @@ const { t } = useSmapI18n()
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.smap-header-brand--compact .smap-header-brand__logo {
-  width: 28px;
-  height: 28px;
-}
-
-.smap-header-brand--compact .smap-header-brand__mark {
-  font-size: 24px;
-}
-
-.smap-header-brand--compact .smap-header-brand__title {
-  font-size: 15px;
 }
 
 @media (max-width: 980px) {
