@@ -16,8 +16,8 @@ catalogs:
       specifier: ^9.3.0
       version: 9.3.0
     '@cloudbase/js-sdk':
-      specifier: ^3.8.0
-      version: 3.8.0
+      specifier: ^3.8.1
+      version: 3.8.1
     '@iconify-json/svg-spinners':
       specifier: ^1.2.4
       version: 1.2.4
@@ -172,7 +172,7 @@ importers:
     dependencies:
       '@cloudbase/js-sdk':
         specifier: 'catalog:'
-        version: 3.8.0
+        version: 3.8.1
       '@lucide/vue':
         specifier: 'catalog:'
         version: 1.31.0(vue@3.5.41(typescript@5.9.3))
@@ -514,8 +514,8 @@ packages:
   '@cloudbase/adapter-wx_mp@1.3.1':
     resolution: {integrity: sha512-rS0N1aD1a0zc421ds17/HzM4RChQ6T2ixMz87bhPJ1yveqJt/KUqYxiXJDWhZ803wwTmJs8aqNkgugsNusNhbg==}
 
-  '@cloudbase/js-sdk@3.8.0':
-    resolution: {integrity: sha512-Rzug1QqzbANW740YMReuy/ZvViF++YP2ArWHCkKhYOmyujXcenK0RezgIyUqZjnf4IxcuN1nVsuhXBniz5wRWA==}
+  '@cloudbase/js-sdk@3.8.1':
+    resolution: {integrity: sha512-sJj+wKXXOnizsfkfW02v6iIWgHozqwuwDAqFBrR61fde/D+em+4JXnt2n3aql537jLMyTOU4tB6Yzu1V1JFy9Q==}
 
   '@cloudbase/wx-cloud-client-sdk@1.8.10':
     resolution: {integrity: sha512-XtWR1zNwKUqnAK1psvhK93EUnZBWhVorUdA1lHNWyI661YsdpLcxPRiX+/yoIrTo24MJyd/KguSuHluq3hsHqA==}
@@ -6033,7 +6033,7 @@ snapshots:
       '@cloudbase/adapter-interface': 0.7.1
       web-streams-polyfill: 4.3.0
 
-  '@cloudbase/js-sdk@3.8.0':
+  '@cloudbase/js-sdk@3.8.1':
     dependencies:
       '@cloudbase/adapter-interface': 0.7.1
       '@cloudbase/adapter-wx_mp': 1.3.1
